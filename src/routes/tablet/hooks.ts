@@ -1,7 +1,25 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabaseClient'
 import { getBusinessDate } from '../../lib/businessDate'
-import type { Product, Promo, Bundle } from '../../types/domain'
+import type { Product, Promo, Bundle, BranchTodayStockRow } from '../../types/domain'
+
+export function useTodayStock(branchId: string | null) {
+  const businessDate = getBusinessDate()
+  return useQuery({
+    queryKey: ['today-stock', branchId, businessDate],
+    enabled: !!branchId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('branch_today_stock', { p_branch_id: branchId })
+      if (error) throw error
+      return data as unknown as BranchTodayStockRow[]
+    },
+  })
+}
+
+export function useInvalidateTodayStock() {
+  const qc = useQueryClient()
+  return () => qc.invalidateQueries({ queryKey: ['today-stock'] })
+}
 
 export function useActiveProducts() {
   return useQuery({

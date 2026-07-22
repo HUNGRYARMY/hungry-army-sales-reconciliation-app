@@ -89,6 +89,17 @@ export interface EndOfDayDispositionInsert {
   entered_by: string
 }
 
+export interface BranchTodayStockRow {
+  product_id: string
+  flavor_name: string
+  size: ProductSize
+  carryover_in: number
+  shipped_in: number
+  available: number
+  sold_today: number
+  remaining_estimate: number
+}
+
 export interface DailyCashEntryInsert {
   date: string
   branch_id: string

@@ -4,23 +4,32 @@ import { useToast, ToastView } from '../../components/Toast'
 import { useAuth } from '../../lib/auth/AuthContext'
 import { supabase } from '../../lib/supabaseClient'
 import { getBusinessDate } from '../../lib/businessDate'
-import { useActiveProducts, useActivePromos, useActiveBundles, useTodayActivity, useInvalidateTodayActivity } from './hooks'
+import {
+  useActiveProducts,
+  useActivePromos,
+  useActiveBundles,
+  useTodayActivity,
+  useInvalidateTodayActivity,
+  useTodayStock,
+  useInvalidateTodayStock,
+} from './hooks'
 import { DiscountBar } from './DiscountBar'
 import { ProductGrid } from './ProductGrid'
 import { BundleGrid } from './BundleGrid'
 import { OtherDiscountModal } from './OtherDiscountModal'
 import { RecentActivity } from './RecentActivity'
+import { StockTable } from './StockTable'
 import { DispositionForm } from './DispositionForm'
 import { CashEntryForm } from './CashEntryForm'
 import type { DiscountType, Product, Bundle } from '../../types/domain'
 
-type Tab = 'products' | 'bundles' | 'close-day'
+type Tab = 'stock' | 'products' | 'bundles' | 'close-day'
 
 export function TabletHome() {
   const { profile } = useAuth()
   const branchId = profile?.branch_id ?? null
 
-  const [tab, setTab] = useState<Tab>('products')
+  const [tab, setTab] = useState<Tab>('stock')
   const [discountType, setDiscountType] = useState<DiscountType>('none')
   const [selectedPromoId, setSelectedPromoId] = useState<string | null>(null)
   const [otherModalProduct, setOtherModalProduct] = useState<Product | null>(null)
@@ -32,6 +41,13 @@ export function TabletHome() {
   const bundles = useActiveBundles()
   const activity = useTodayActivity(branchId)
   const invalidateActivity = useInvalidateTodayActivity()
+  const stock = useTodayStock(branchId)
+  const invalidateStock = useInvalidateTodayStock()
+
+  function invalidateAfterSale() {
+    invalidateActivity()
+    invalidateStock()
+  }
 
   function resetDiscountAfterTap() {
     // one-tap-per-sale flow: after a discounted sale, snap back to Regular so the next tap (usually
@@ -58,7 +74,7 @@ export function TabletHome() {
       return
     }
     show(`${product.flavor_name} (${product.size}) +1`)
-    invalidateActivity()
+    invalidateAfterSale()
     resetDiscountAfterTap()
   }
 
@@ -99,7 +115,7 @@ export function TabletHome() {
       return
     }
     show(`${product.flavor_name} (${product.size}) +1 — flagged for review`)
-    invalidateActivity()
+    invalidateAfterSale()
     resetDiscountAfterTap()
   }
 
@@ -119,12 +135,21 @@ export function TabletHome() {
       return
     }
     show(`${bundle.name} +1`)
-    invalidateActivity()
+    invalidateAfterSale()
   }
 
   return (
     <AppShell>
       <div className="flex border-b border-app-border bg-app-sidebar px-4">
+        <button
+          type="button"
+          onClick={() => setTab('stock')}
+          className={`border-b-2 px-4 py-3 text-sm font-medium ${
+            tab === 'stock' ? 'border-app-accent text-app-text' : 'border-transparent text-app-text-muted'
+          }`}
+        >
+          Stock
+        </button>
         <button
           type="button"
           onClick={() => setTab('products')}
@@ -167,7 +192,16 @@ export function TabletHome() {
         />
       )}
 
-      {tab === 'close-day' ? (
+      {tab === 'stock' ? (
+        <div className="p-4">
+          <div className="rounded-lg border border-app-border bg-app-sidebar">
+            <h2 className="border-b border-app-border px-4 py-3 text-sm font-semibold text-app-text">
+              Today's stock
+            </h2>
+            <StockTable rows={stock.data ?? []} />
+          </div>
+        </div>
+      ) : tab === 'close-day' ? (
         <div className="grid gap-4 p-4 lg:grid-cols-2">
           {branchId && profile && <DispositionForm branchId={branchId} enteredBy={profile.id} />}
           {branchId && profile && <CashEntryForm branchId={branchId} enteredBy={profile.id} />}
@@ -186,7 +220,7 @@ export function TabletHome() {
             <h2 className="border-b border-app-border px-4 py-3 text-sm font-semibold text-app-text">
               Today's activity
             </h2>
-            <RecentActivity rows={activity.data ?? []} onVoided={invalidateActivity} />
+            <RecentActivity rows={activity.data ?? []} onVoided={invalidateAfterSale} />
           </div>
         </div>
       )}
