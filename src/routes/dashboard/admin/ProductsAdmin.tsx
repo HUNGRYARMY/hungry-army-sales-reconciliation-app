@@ -94,7 +94,12 @@ export function ProductsAdmin() {
       setPriceEditId(null)
       invalidate('admin-products')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      const message = e instanceof Error ? e.message : String(e)
+      if (message.includes('price_history_product_id_effective_date_key') || message.includes('duplicate key')) {
+        setError(`A price was already set for ${priceEffectiveDate} — pick a different effective date, or this is a duplicate entry.`)
+      } else {
+        setError(message)
+      }
     } finally {
       setBusyId(null)
     }
