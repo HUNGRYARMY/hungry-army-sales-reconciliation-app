@@ -243,13 +243,15 @@ export function ProductsAdmin() {
                     </div>
                   ) : (
                     <div className="flex justify-end gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => openPriceEditor(p.id, p.currentPrice)}
-                        className="rounded-md border border-app-border px-3 py-1.5 text-xs text-app-text-muted hover:border-app-accent hover:text-app-text"
-                      >
-                        Update price
-                      </button>
+                      {p.status === 'active' && (
+                        <button
+                          type="button"
+                          onClick={() => openPriceEditor(p.id, p.currentPrice)}
+                          className="rounded-md border border-app-border px-3 py-1.5 text-xs text-app-text-muted hover:border-app-accent hover:text-app-text"
+                        >
+                          Update price
+                        </button>
+                      )}
                       <button
                         type="button"
                         disabled={busyId === p.id}
