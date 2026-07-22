@@ -103,3 +103,58 @@ export function useInvalidateTodayActivity() {
   const qc = useQueryClient()
   return () => qc.invalidateQueries({ queryKey: ['today-activity'] })
 }
+
+// product_id -> true once a disposition row exists for that branch/product/today (unique(branch_id,
+// product_id, date) means a second insert would just fail — the UI uses this to lock the row instead).
+export function useTodayDispositionStatus(branchId: string | null) {
+  const businessDate = getBusinessDate()
+  return useQuery({
+    queryKey: ['today-disposition-status', branchId, businessDate],
+    enabled: !!branchId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('end_of_day_disposition')
+        .select('product_id')
+        .eq('branch_id', branchId!)
+        .eq('date', businessDate)
+      if (error) throw error
+      return new Set((data ?? []).map((r: any) => r.product_id as string))
+    },
+  })
+}
+
+export function useInvalidateTodayDispositionStatus() {
+  const qc = useQueryClient()
+  return () => qc.invalidateQueries({ queryKey: ['today-disposition-status'] })
+}
+
+export interface CashEntrySummary {
+  cash_counted: number
+  digital_payments: number
+  computed_gross_sales: number
+  variance_vs_cash: number
+  explanation: string | null
+}
+
+export function useTodayCashEntry(branchId: string | null) {
+  const businessDate = getBusinessDate()
+  return useQuery({
+    queryKey: ['today-cash-entry', branchId, businessDate],
+    enabled: !!branchId,
+    queryFn: async (): Promise<CashEntrySummary | null> => {
+      const { data, error } = await supabase
+        .from('daily_cash_entry')
+        .select('cash_counted, digital_payments, computed_gross_sales, variance_vs_cash, explanation')
+        .eq('branch_id', branchId!)
+        .eq('date', businessDate)
+        .maybeSingle()
+      if (error) throw error
+      return (data as unknown as CashEntrySummary) ?? null
+    },
+  })
+}
+
+export function useInvalidateTodayCashEntry() {
+  const qc = useQueryClient()
+  return () => qc.invalidateQueries({ queryKey: ['today-cash-entry'] })
+}

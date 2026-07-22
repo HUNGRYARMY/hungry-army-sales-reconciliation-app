@@ -10,9 +10,11 @@ import { ProductGrid } from './ProductGrid'
 import { BundleGrid } from './BundleGrid'
 import { OtherDiscountModal } from './OtherDiscountModal'
 import { RecentActivity } from './RecentActivity'
+import { DispositionForm } from './DispositionForm'
+import { CashEntryForm } from './CashEntryForm'
 import type { DiscountType, Product, Bundle } from '../../types/domain'
 
-type Tab = 'products' | 'bundles'
+type Tab = 'products' | 'bundles' | 'close-day'
 
 export function TabletHome() {
   const { profile } = useAuth()
@@ -141,6 +143,15 @@ export function TabletHome() {
         >
           Bundles
         </button>
+        <button
+          type="button"
+          onClick={() => setTab('close-day')}
+          className={`border-b-2 px-4 py-3 text-sm font-medium ${
+            tab === 'close-day' ? 'border-app-accent text-app-text' : 'border-transparent text-app-text-muted'
+          }`}
+        >
+          Close Day
+        </button>
       </div>
 
       {tab === 'products' && (
@@ -156,22 +167,29 @@ export function TabletHome() {
         />
       )}
 
-      <div className="grid gap-4 p-4 lg:grid-cols-[1fr_320px]">
-        <div className="rounded-lg border border-app-border bg-app-sidebar">
-          {tab === 'products' ? (
-            <ProductGrid products={products.data ?? []} disabled={submitting} onTap={handleProductTap} />
-          ) : (
-            <BundleGrid bundles={bundles.data ?? []} disabled={submitting} onTap={handleBundleTap} />
-          )}
+      {tab === 'close-day' ? (
+        <div className="grid gap-4 p-4 lg:grid-cols-2">
+          {branchId && profile && <DispositionForm branchId={branchId} enteredBy={profile.id} />}
+          {branchId && profile && <CashEntryForm branchId={branchId} enteredBy={profile.id} />}
         </div>
+      ) : (
+        <div className="grid gap-4 p-4 lg:grid-cols-[1fr_320px]">
+          <div className="rounded-lg border border-app-border bg-app-sidebar">
+            {tab === 'products' ? (
+              <ProductGrid products={products.data ?? []} disabled={submitting} onTap={handleProductTap} />
+            ) : (
+              <BundleGrid bundles={bundles.data ?? []} disabled={submitting} onTap={handleBundleTap} />
+            )}
+          </div>
 
-        <div className="rounded-lg border border-app-border bg-app-sidebar">
-          <h2 className="border-b border-app-border px-4 py-3 text-sm font-semibold text-app-text">
-            Today's activity
-          </h2>
-          <RecentActivity rows={activity.data ?? []} />
+          <div className="rounded-lg border border-app-border bg-app-sidebar">
+            <h2 className="border-b border-app-border px-4 py-3 text-sm font-semibold text-app-text">
+              Today's activity
+            </h2>
+            <RecentActivity rows={activity.data ?? []} />
+          </div>
         </div>
-      </div>
+      )}
 
       {otherModalProduct && (
         <OtherDiscountModal
