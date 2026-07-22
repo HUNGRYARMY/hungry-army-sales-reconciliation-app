@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { getBusinessDate } from '../../../lib/businessDate'
-import { useAllProductsAdmin, insertProduct, updateProductStatus, insertPrice, useInvalidateAdmin } from './hooks'
+import {
+  useAllProductsAdmin,
+  insertProduct,
+  updateProductStatus,
+  updateProductName,
+  insertPrice,
+  useInvalidateAdmin,
+} from './hooks'
 import type { ProductSize } from '../../../types/domain'
 
 export function ProductsAdmin() {
@@ -16,6 +23,9 @@ export function ProductsAdmin() {
   const [priceEditId, setPriceEditId] = useState<string | null>(null)
   const [priceValue, setPriceValue] = useState('')
   const [priceEffectiveDate, setPriceEffectiveDate] = useState(() => getBusinessDate())
+
+  const [nameEditId, setNameEditId] = useState<string | null>(null)
+  const [nameValue, setNameValue] = useState('')
 
   async function handleAddProduct() {
     if (!flavorName.trim()) {
@@ -39,6 +49,24 @@ export function ProductsAdmin() {
     setBusyId(id)
     try {
       await updateProductStatus(id, status === 'active' ? 'discontinued' : 'active')
+      invalidate('admin-products')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function handleSaveName(id: string) {
+    if (!nameValue.trim()) {
+      setError('Flavor name is required')
+      return
+    }
+    setBusyId(id)
+    setError(null)
+    try {
+      await updateProductName(id, nameValue.trim())
+      setNameEditId(null)
       invalidate('admin-products')
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
@@ -107,7 +135,8 @@ export function ProductsAdmin() {
         </button>
         <p className="mt-2 text-xs text-app-text-faint">
           New products need a price added before they can be sold — the trigger that stamps sale prices
-          requires a price_history row.
+          requires a price_history row. Click a flavor name in the table to rename it — unlike price, this
+          applies retroactively to past reports too, since they reference the same product record.
         </p>
       </div>
 
@@ -125,7 +154,46 @@ export function ProductsAdmin() {
           <tbody>
             {(products.data ?? []).map((p) => (
               <tr key={p.id} className="border-b border-app-border last:border-b-0">
-                <td className="px-4 py-2.5 text-app-text">{p.flavor_name}</td>
+                <td className="px-4 py-2.5 text-app-text">
+                  {nameEditId === p.id ? (
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        autoFocus
+                        value={nameValue}
+                        onChange={(e) => setNameValue(e.target.value)}
+                        className="w-32 rounded-md border border-app-border bg-app-bg px-2 py-1 text-xs text-app-text outline-none focus:border-app-accent"
+                      />
+                      <button
+                        type="button"
+                        disabled={busyId === p.id}
+                        onClick={() => handleSaveName(p.id)}
+                        className="rounded-md bg-app-accent px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNameEditId(null)}
+                        className="rounded-md border border-app-border px-2 py-1 text-xs text-app-text-muted"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNameEditId(p.id)
+                        setNameValue(p.flavor_name)
+                      }}
+                      className="text-left hover:text-app-accent"
+                      title="Click to rename"
+                    >
+                      {p.flavor_name}
+                    </button>
+                  )}
+                </td>
                 <td className="px-3 py-2.5 text-app-text-muted">{p.size}</td>
                 <td className="px-3 py-2.5">
                   <span className={p.status === 'active' ? 'text-app-text' : 'text-app-text-faint'}>

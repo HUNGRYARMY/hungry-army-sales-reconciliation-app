@@ -66,6 +66,11 @@ export async function updateProductStatus(id: string, status: CatalogStatus) {
   if (error) throw error
 }
 
+export async function updateProductName(id: string, flavor_name: string) {
+  const { error } = await supabase.from('products').update({ flavor_name }).eq('id', id)
+  if (error) throw error
+}
+
 export async function insertPrice(input: { product_id: string; price: number; effective_date: string }) {
   const { error } = await supabase.from('price_history').insert(input)
   if (error) throw error
