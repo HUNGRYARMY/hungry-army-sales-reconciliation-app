@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../../lib/supabaseClient'
 import { getBusinessDate } from '../../../lib/businessDate'
-import type { Branch, Product, ProductSize, CatalogStatus } from '../../../types/domain'
+import type { Branch, Product, ProductSize, CatalogStatus, Promo } from '../../../types/domain'
 
 export function useAllBranchesAdmin() {
   return useQuery({
@@ -68,6 +68,27 @@ export async function updateProductStatus(id: string, status: CatalogStatus) {
 
 export async function insertPrice(input: { product_id: string; price: number; effective_date: string }) {
   const { error } = await supabase.from('price_history').insert(input)
+  if (error) throw error
+}
+
+export function useAllPromosAdmin() {
+  return useQuery({
+    queryKey: ['admin-promos'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('promos').select('*').order('name')
+      if (error) throw error
+      return data as unknown as Promo[]
+    },
+  })
+}
+
+export async function insertPromo(input: { name: string; rate: number }) {
+  const { error } = await supabase.from('promos').insert(input)
+  if (error) throw error
+}
+
+export async function updatePromoStatus(id: string, status: CatalogStatus) {
+  const { error } = await supabase.from('promos').update({ status }).eq('id', id)
   if (error) throw error
 }
 
