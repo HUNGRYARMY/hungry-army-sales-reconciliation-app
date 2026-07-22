@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useDiscountReviewRows, markDiscountReviewed, useInvalidateDashboard } from './hooks'
+import { getErrorMessage } from '../../lib/errorMessage'
 
 export function DiscountReviewView({ branchId }: { branchId: string | null }) {
   const rows = useDiscountReviewRows(branchId)
@@ -15,7 +16,7 @@ export function DiscountReviewView({ branchId }: { branchId: string | null }) {
       await markDiscountReviewed(id, notes[id]?.trim() || null)
       invalidate()
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(getErrorMessage(e))
     } finally {
       setBusyId(null)
     }

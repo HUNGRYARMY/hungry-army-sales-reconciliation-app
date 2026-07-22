@@ -25,14 +25,19 @@ export function useActiveProducts() {
   return useQuery({
     queryKey: ['products', 'active'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('status', 'active')
-        .order('flavor_name')
-        .order('size')
+      const { data, error } = await supabase.from('products').select('*').eq('status', 'active')
       if (error) throw error
-      return data as unknown as Product[]
+
+      // Matches the founder's Admin > Products & Prices arrangement: regular flavors first (by
+      // sort_order, manually set there), then junior, each falling back to flavor name when unordered.
+      const products = data as unknown as Product[]
+      return products.sort((a, b) => {
+        if (a.size !== b.size) return a.size === 'regular' ? -1 : 1
+        const oa = a.sort_order ?? Number.MAX_SAFE_INTEGER
+        const ob = b.sort_order ?? Number.MAX_SAFE_INTEGER
+        if (oa !== ob) return oa - ob
+        return a.flavor_name.localeCompare(b.flavor_name)
+      })
     },
   })
 }

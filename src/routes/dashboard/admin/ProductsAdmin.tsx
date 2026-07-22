@@ -5,11 +5,13 @@ import {
   insertProduct,
   updateProductStatus,
   updateProductName,
+  updateProductSize,
   insertPrice,
   reorderProducts,
   useInvalidateAdmin,
   type ProductWithPrice,
 } from './hooks'
+import { getErrorMessage } from '../../../lib/errorMessage'
 import type { ProductSize } from '../../../types/domain'
 
 export function ProductsAdmin() {
@@ -29,6 +31,9 @@ export function ProductsAdmin() {
   const [nameEditId, setNameEditId] = useState<string | null>(null)
   const [nameValue, setNameValue] = useState('')
 
+  const [sizeEditId, setSizeEditId] = useState<string | null>(null)
+  const [sizeValue, setSizeValue] = useState<ProductSize>('regular')
+
   async function handleAddProduct() {
     if (!flavorName.trim()) {
       setError('Flavor name is required')
@@ -41,7 +46,7 @@ export function ProductsAdmin() {
       setFlavorName('')
       invalidate('admin-products')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(getErrorMessage(e))
     } finally {
       setSubmitting(false)
     }
@@ -53,7 +58,7 @@ export function ProductsAdmin() {
       await updateProductStatus(id, status === 'active' ? 'discontinued' : 'active')
       invalidate('admin-products')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(getErrorMessage(e))
     } finally {
       setBusyId(null)
     }
@@ -71,7 +76,26 @@ export function ProductsAdmin() {
       setNameEditId(null)
       invalidate('admin-products')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(getErrorMessage(e))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function handleSaveSize(id: string) {
+    setBusyId(id)
+    setError(null)
+    try {
+      await updateProductSize(id, sizeValue)
+      setSizeEditId(null)
+      invalidate('admin-products')
+    } catch (e) {
+      const message = getErrorMessage(e)
+      if (message.includes('products_flavor_name_size_key') || message.includes('duplicate key')) {
+        setError(`A ${sizeValue} product with this same flavor name already exists — rename one of them first.`)
+      } else {
+        setError(message)
+      }
     } finally {
       setBusyId(null)
     }
@@ -96,7 +120,7 @@ export function ProductsAdmin() {
       setPriceEditId(null)
       invalidate('admin-products')
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e)
+      const message = getErrorMessage(e)
       if (message.includes('price_history_product_id_effective_date_key') || message.includes('duplicate key')) {
         setError(`A price was already set for ${priceEffectiveDate} — pick a different effective date, or this is a duplicate entry.`)
       } else {
@@ -118,7 +142,7 @@ export function ProductsAdmin() {
       await reorderProducts(reordered.map((p) => p.id))
       invalidate('admin-products')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(getErrorMessage(e))
     } finally {
       setBusyId(null)
     }
@@ -169,6 +193,52 @@ export function ProductsAdmin() {
         title="Click to rename"
       >
         {p.flavor_name}
+      </button>
+    )
+  }
+
+  function renderSizeCell(p: ProductWithPrice) {
+    if (sizeEditId === p.id) {
+      return (
+        <div className="flex items-center gap-1.5">
+          <select
+            autoFocus
+            value={sizeValue}
+            onChange={(e) => setSizeValue(e.target.value as ProductSize)}
+            className="rounded-md border border-app-border bg-app-bg px-2 py-1 text-xs text-app-text outline-none focus:border-app-accent"
+          >
+            <option value="regular">Regular</option>
+            <option value="junior">Junior</option>
+          </select>
+          <button
+            type="button"
+            disabled={busyId === p.id}
+            onClick={() => handleSaveSize(p.id)}
+            className="rounded-md bg-app-accent px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            onClick={() => setSizeEditId(null)}
+            className="rounded-md border border-app-border px-2 py-1 text-xs text-app-text-muted"
+          >
+            Cancel
+          </button>
+        </div>
+      )
+    }
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setSizeEditId(p.id)
+          setSizeValue(p.size)
+        }}
+        className="text-xs text-app-text-muted hover:text-app-accent"
+        title="Click to move to the other size group"
+      >
+        {p.size === 'regular' ? 'Regular' : 'Junior'} · change
       </button>
     )
   }
@@ -244,6 +314,7 @@ export function ProductsAdmin() {
             <tr className="border-b border-app-border text-left text-xs text-app-text-muted">
               {reorderable && <th className="px-4 py-2 font-medium">Order</th>}
               <th className="px-4 py-2 font-medium">Flavor</th>
+              <th className="px-3 py-2 font-medium">Size</th>
               <th className="px-3 py-2 font-medium">Status</th>
               <th className="px-3 py-2 text-right font-medium">Current price</th>
               <th className="px-4 py-2 font-medium"></th>
@@ -277,6 +348,7 @@ export function ProductsAdmin() {
                   </td>
                 )}
                 <td className="px-4 py-2.5 text-app-text">{renderNameCell(p)}</td>
+                <td className="px-3 py-2.5">{renderSizeCell(p)}</td>
                 <td className="px-3 py-2.5">
                   <span className={p.status === 'active' ? 'text-app-text' : 'text-app-text-faint'}>
                     {p.status === 'active' ? 'Active' : 'Discontinued'}
@@ -328,10 +400,11 @@ export function ProductsAdmin() {
           {submitting ? 'Saving…' : 'Add product'}
         </button>
         <p className="mt-2 text-xs text-app-text-faint">
-          New products need a price added before they can be sold. Click a flavor name to rename it — unlike
-          price, renaming applies retroactively to past reports too, since they reference the same product
+          New products need a price added before they can be sold. Click a flavor name to rename it, or
+          "change" next to its size to move it to the other group (e.g. fix an accidental Regular/Junior
+          mix-up) — both apply retroactively to past reports too, since they reference the same product
           record. Use ↑/↓ to reorder within Regular or Junior — flavors can only move within their own size
-          group, never into the other one.
+          group via the arrows, never directly into the other one.
         </p>
       </div>
 

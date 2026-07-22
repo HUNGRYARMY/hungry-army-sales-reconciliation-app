@@ -8,6 +8,7 @@ import {
   deleteThreshold,
   useInvalidateAdmin,
 } from './hooks'
+import { getErrorMessage } from '../../../lib/errorMessage'
 
 const EDITABLE_DISCOUNT_TYPES = ['senior', 'pwd']
 
@@ -39,7 +40,7 @@ export function RatesThresholdsAdmin() {
       setEditingRateType(null)
       invalidate('admin-discount-settings')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(getErrorMessage(e))
     }
   }
 
@@ -54,7 +55,7 @@ export function RatesThresholdsAdmin() {
       setEditingThresholdKey(null)
       invalidate('admin-thresholds')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(getErrorMessage(e))
     }
   }
 
@@ -70,7 +71,7 @@ export function RatesThresholdsAdmin() {
       setNewOverrideValue('')
       invalidate('admin-thresholds')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(getErrorMessage(e))
     }
   }
 
@@ -79,7 +80,7 @@ export function RatesThresholdsAdmin() {
       await deleteThreshold(id)
       invalidate('admin-thresholds')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(getErrorMessage(e))
     }
   }
 

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAllPromosAdmin, insertPromo, updatePromoStatus, useInvalidateAdmin } from './hooks'
+import { getErrorMessage } from '../../../lib/errorMessage'
 
 export function PromosAdmin() {
   const promos = useAllPromosAdmin()
@@ -25,7 +26,7 @@ export function PromosAdmin() {
       setRatePercent('')
       invalidate('admin-promos')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(getErrorMessage(e))
     } finally {
       setSubmitting(false)
     }
@@ -37,7 +38,7 @@ export function PromosAdmin() {
       await updatePromoStatus(id, status === 'active' ? 'discontinued' : 'active')
       invalidate('admin-promos')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(getErrorMessage(e))
     } finally {
       setBusyId(null)
     }

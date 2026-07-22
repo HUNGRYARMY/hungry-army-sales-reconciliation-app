@@ -9,6 +9,7 @@ import {
   useAllProductsAdmin,
   useInvalidateAdmin,
 } from './hooks'
+import { getErrorMessage } from '../../../lib/errorMessage'
 
 export function BundlesAdmin() {
   const bundles = useAllBundlesAdmin()
@@ -42,7 +43,7 @@ export function BundlesAdmin() {
       setPrice('')
       invalidate('admin-bundles')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(getErrorMessage(e))
     } finally {
       setSubmitting(false)
     }
@@ -54,7 +55,7 @@ export function BundlesAdmin() {
       await updateBundleStatus(id, status === 'active' ? 'discontinued' : 'active')
       invalidate('admin-bundles')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(getErrorMessage(e))
     } finally {
       setBusyId(null)
     }
@@ -73,7 +74,7 @@ export function BundlesAdmin() {
       setNewComponentQty('1')
       invalidate('admin-bundle-components')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(getErrorMessage(e))
     }
   }
 
@@ -88,7 +89,7 @@ export function BundlesAdmin() {
       setEditingComponentId(null)
       invalidate('admin-bundle-components')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(getErrorMessage(e))
     }
   }
 

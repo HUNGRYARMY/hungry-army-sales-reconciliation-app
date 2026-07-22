@@ -93,6 +93,14 @@ export async function updateProductStatus(id: string, status: CatalogStatus) {
   if (error) throw error
 }
 
+// Safe to change after creation for the same reason renaming is: it doesn't touch any foreign-keyed
+// history (sale_tally/deliveries/price_history all reference product_id, not size directly). Existing
+// sort_order is left as-is — it may land oddly in the new group at first, but is a one-click move away.
+export async function updateProductSize(id: string, size: ProductSize) {
+  const { error } = await supabase.from('products').update({ size }).eq('id', id)
+  if (error) throw error
+}
+
 export async function updateProductName(id: string, flavor_name: string) {
   const { error } = await supabase.from('products').update({ flavor_name }).eq('id', id)
   if (error) throw error

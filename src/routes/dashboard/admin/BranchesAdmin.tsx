@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAllBranchesAdmin, insertBranch, updateBranch, useInvalidateAdmin } from './hooks'
+import { getErrorMessage } from '../../../lib/errorMessage'
 
 export function BranchesAdmin() {
   const branches = useAllBranchesAdmin()
@@ -24,7 +25,7 @@ export function BranchesAdmin() {
       setClosingTime('')
       invalidate('admin-branches')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(getErrorMessage(e))
     } finally {
       setSubmitting(false)
     }
@@ -36,7 +37,7 @@ export function BranchesAdmin() {
       await updateBranch(id, { is_active: !isActive })
       invalidate('admin-branches')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(getErrorMessage(e))
     } finally {
       setBusyId(null)
     }

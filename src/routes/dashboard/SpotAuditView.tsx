@@ -3,6 +3,7 @@ import { useAuth } from '../../lib/auth/AuthContext'
 import { useAllBranches } from '../../lib/queries/branches'
 import { getBusinessDate } from '../../lib/businessDate'
 import { useSpotAuditRows, fetchSubmittedTotal, insertSpotAudit, useInvalidateDashboard } from './hooks'
+import { getErrorMessage } from '../../lib/errorMessage'
 
 function peso(n: number | null) {
   return n === null ? '—' : `₱${n.toFixed(2)}`
@@ -56,7 +57,7 @@ export function SpotAuditView({ branchId }: { branchId: string | null }) {
       setNotes('')
       invalidate()
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(getErrorMessage(e))
     } finally {
       setSubmitting(false)
     }
