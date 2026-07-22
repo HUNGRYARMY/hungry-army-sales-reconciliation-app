@@ -1,18 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabaseClient'
 import { getBusinessDate } from '../../lib/businessDate'
-import type { Branch } from '../../types/domain'
 
-export function useAllBranches() {
-  return useQuery({
-    queryKey: ['branches', 'all'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('branches').select('*').order('name')
-      if (error) throw error
-      return data as unknown as Branch[]
-    },
-  })
-}
+export { useAllBranches } from '../../lib/queries/branches'
 
 export interface DeliveryRow {
   id: string

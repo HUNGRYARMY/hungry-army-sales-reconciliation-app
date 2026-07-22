@@ -3,9 +3,9 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './lib/queryClient'
 import { AuthProvider } from './lib/auth/AuthContext'
 import { UnassignedPage } from './routes/UnassignedPage'
-import { ComingSoonPage } from './routes/ComingSoonPage'
 import { TabletHome } from './routes/tablet/TabletHome'
 import { CommissaryHome } from './routes/commissary/CommissaryHome'
+import { DashboardHome } from './routes/dashboard/DashboardHome'
 import { RequireRole, RootRedirect, LoginRoute } from './routes/guards'
 
 function App() {
@@ -37,7 +37,7 @@ function App() {
               path="/dashboard/*"
               element={
                 <RequireRole allow={['founder_admin', 'supervisor']}>
-                  <ComingSoonPage title="Founder Dashboard" />
+                  <DashboardHome />
                 </RequireRole>
               }
             />
