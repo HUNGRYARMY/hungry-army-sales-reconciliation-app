@@ -7,9 +7,15 @@ export function useAllBranchesAdmin() {
   return useQuery({
     queryKey: ['admin-branches'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('branches').select('*').order('name')
+      const { data, error } = await supabase.from('branches').select('*')
       if (error) throw error
-      return data as unknown as Branch[]
+      const branches = data as unknown as Branch[]
+      return branches.sort((a, b) => {
+        const oa = a.sort_order ?? Number.MAX_SAFE_INTEGER
+        const ob = b.sort_order ?? Number.MAX_SAFE_INTEGER
+        if (oa !== ob) return oa - ob
+        return a.name.localeCompare(b.name)
+      })
     },
   })
 }
@@ -22,6 +28,14 @@ export async function insertBranch(input: { name: string; closing_time: string |
 export async function updateBranch(id: string, patch: Partial<{ name: string; closing_time: string | null; is_active: boolean }>) {
   const { error } = await supabase.from('branches').update(patch).eq('id', id)
   if (error) throw error
+}
+
+export async function reorderBranches(orderedIds: string[]) {
+  const results = await Promise.all(
+    orderedIds.map((id, index) => supabase.from('branches').update({ sort_order: index }).eq('id', id)),
+  )
+  const failed = results.find((r) => r.error)
+  if (failed?.error) throw failed.error
 }
 
 export interface ProductWithPrice extends Product {

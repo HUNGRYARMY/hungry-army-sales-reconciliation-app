@@ -4,6 +4,7 @@ import { useToast, ToastView } from '../../components/Toast'
 import { useAuth } from '../../lib/auth/AuthContext'
 import { supabase } from '../../lib/supabaseClient'
 import { getBusinessDate } from '../../lib/businessDate'
+import { usePersistedState } from '../../lib/usePersistedState'
 import {
   useActiveProducts,
   useActivePromos,
@@ -29,7 +30,7 @@ export function TabletHome() {
   const { profile } = useAuth()
   const branchId = profile?.branch_id ?? null
 
-  const [tab, setTab] = useState<Tab>('stock')
+  const [tab, setTab] = usePersistedState<Tab>('tablet-tab', 'stock')
   const [discountType, setDiscountType] = useState<DiscountType>('none')
   const [selectedPromoId, setSelectedPromoId] = useState<string | null>(null)
   const [otherModalProduct, setOtherModalProduct] = useState<Product | null>(null)

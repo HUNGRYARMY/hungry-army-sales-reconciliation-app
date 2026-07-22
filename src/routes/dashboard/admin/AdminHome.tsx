@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { usePersistedState } from '../../../lib/usePersistedState'
 import { BranchesAdmin } from './BranchesAdmin'
 import { ProductsAdmin } from './ProductsAdmin'
 import { PromosAdmin } from './PromosAdmin'
@@ -16,7 +16,7 @@ const SECTIONS: { id: AdminSection; label: string }[] = [
 ]
 
 export function AdminHome() {
-  const [section, setSection] = useState<AdminSection>('branches')
+  const [section, setSection] = usePersistedState<AdminSection>('admin-section', 'branches')
 
   return (
     <div>

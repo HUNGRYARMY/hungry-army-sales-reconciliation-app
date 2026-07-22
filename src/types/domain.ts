@@ -11,6 +11,7 @@ export interface Branch {
   name: string
   closing_time: string | null
   is_active: boolean
+  sort_order: number | null
 }
 
 export interface Profile {
