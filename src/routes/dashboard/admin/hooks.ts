@@ -150,6 +150,75 @@ export async function updateBundleComponentQty(id: string, qty_per_bundle: numbe
   if (error) throw error
 }
 
+export interface DiscountSettingRow {
+  discount_type: string
+  rate: number
+  description: string | null
+}
+
+export function useDiscountSettings() {
+  return useQuery({
+    queryKey: ['admin-discount-settings'],
+    queryFn: async (): Promise<DiscountSettingRow[]> => {
+      const { data, error } = await supabase.from('discount_settings').select('*').order('discount_type')
+      if (error) throw error
+      return (data ?? []).map((r: any) => ({ discount_type: r.discount_type, rate: Number(r.rate), description: r.description }))
+    },
+  })
+}
+
+export async function updateDiscountRate(discount_type: string, rate: number) {
+  const { error } = await supabase.from('discount_settings').update({ rate }).eq('discount_type', discount_type)
+  if (error) throw error
+}
+
+export interface ThresholdRow {
+  id: string
+  branch_id: string | null
+  branch_name: string | null
+  metric: 'cash_variance' | 'shrinkage'
+  threshold_value: number
+}
+
+export function useAllThresholdsAdmin() {
+  return useQuery({
+    queryKey: ['admin-thresholds'],
+    queryFn: async (): Promise<ThresholdRow[]> => {
+      const { data, error } = await supabase
+        .from('variance_thresholds')
+        .select('id, branch_id, metric, threshold_value, branches(name)')
+        .order('metric')
+      if (error) throw error
+      return (data ?? []).map((r: any) => ({
+        id: r.id,
+        branch_id: r.branch_id,
+        branch_name: r.branches?.name ?? null,
+        metric: r.metric,
+        threshold_value: Number(r.threshold_value),
+      }))
+    },
+  })
+}
+
+export async function upsertThreshold(branch_id: string | null, metric: 'cash_variance' | 'shrinkage', threshold_value: number) {
+  let q = supabase.from('variance_thresholds').select('id').eq('metric', metric)
+  q = branch_id ? q.eq('branch_id', branch_id) : q.is('branch_id', null)
+  const { data: existing, error: selErr } = await q.maybeSingle()
+  if (selErr) throw selErr
+  if (existing) {
+    const { error } = await supabase.from('variance_thresholds').update({ threshold_value }).eq('id', existing.id)
+    if (error) throw error
+  } else {
+    const { error } = await supabase.from('variance_thresholds').insert({ branch_id, metric, threshold_value })
+    if (error) throw error
+  }
+}
+
+export async function deleteThreshold(id: string) {
+  const { error } = await supabase.from('variance_thresholds').delete().eq('id', id)
+  if (error) throw error
+}
+
 export function useInvalidateAdmin() {
   const qc = useQueryClient()
   return (key: string) => qc.invalidateQueries({ queryKey: [key] })
