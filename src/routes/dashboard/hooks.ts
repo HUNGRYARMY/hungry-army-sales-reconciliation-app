@@ -189,6 +189,64 @@ export async function markDiscountReviewed(id: string, notes: string | null) {
   if (error) throw error
 }
 
+export interface SpotAuditRow {
+  id: string
+  date: string
+  branchName: string
+  countedAmount: number
+  comparedToSubmitted: number | null
+  variance: number | null
+  notes: string | null
+}
+
+export function useSpotAuditRows(branchId: string | null) {
+  return useQuery({
+    queryKey: ['dashboard-spot-audit', branchId],
+    queryFn: async (): Promise<SpotAuditRow[]> => {
+      let q = supabase
+        .from('spot_audit')
+        .select('id, date, counted_amount, compared_to_submitted, variance, notes, branches(name)')
+        .order('date', { ascending: false })
+        .limit(50)
+      if (branchId) q = q.eq('branch_id', branchId)
+      const { data, error } = await q
+      if (error) throw error
+      return (data ?? []).map((r: any) => ({
+        id: r.id,
+        date: r.date,
+        branchName: r.branches?.name ?? 'Branch',
+        countedAmount: Number(r.counted_amount),
+        comparedToSubmitted: r.compared_to_submitted !== null ? Number(r.compared_to_submitted) : null,
+        variance: r.variance !== null ? Number(r.variance) : null,
+        notes: r.notes,
+      }))
+    },
+  })
+}
+
+export async function fetchSubmittedTotal(branchId: string, date: string): Promise<number | null> {
+  const { data, error } = await supabase
+    .from('daily_cash_entry')
+    .select('reported_total')
+    .eq('branch_id', branchId)
+    .eq('date', date)
+    .maybeSingle()
+  if (error) throw error
+  return data ? Number(data.reported_total) : null
+}
+
+export async function insertSpotAudit(input: {
+  date: string
+  branch_id: string
+  counted_amount: number
+  compared_to_submitted: number | null
+  notes: string | null
+  performed_by: string
+}) {
+  const { error } = await supabase.from('spot_audit').insert(input)
+  if (error) throw error
+}
+
 export function useInvalidateDashboard() {
   const qc = useQueryClient()
   return () => {
