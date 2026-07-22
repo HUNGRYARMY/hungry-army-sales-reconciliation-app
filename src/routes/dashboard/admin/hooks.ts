@@ -48,10 +48,18 @@ export function useAllProductsAdmin() {
         if (!latestByProduct.has(p.product_id)) latestByProduct.set(p.product_id, Number(p.price))
       }
 
-      return (productsRes.data as unknown as Product[]).map((p) => ({
+      const withPrices = (productsRes.data as unknown as Product[]).map((p) => ({
         ...p,
         currentPrice: latestByProduct.get(p.id) ?? null,
       }))
+
+      // active flavors first, discontinued ones pushed to the bottom rather than staying interleaved
+      // alphabetically — makes the day-to-day list easier to scan as more flavors get retired over time
+      return withPrices.sort((a, b) => {
+        if (a.status !== b.status) return a.status === 'discontinued' ? 1 : -1
+        if (a.flavor_name !== b.flavor_name) return a.flavor_name.localeCompare(b.flavor_name)
+        return a.size.localeCompare(b.size)
+      })
     },
   })
 }
