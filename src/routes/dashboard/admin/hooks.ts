@@ -53,15 +53,34 @@ export function useAllProductsAdmin() {
         currentPrice: latestByProduct.get(p.id) ?? null,
       }))
 
-      // active flavors first, discontinued ones pushed to the bottom rather than staying interleaved
-      // alphabetically — makes the day-to-day list easier to scan as more flavors get retired over time
+      // Grouped: active regular, then active junior, then discontinued (any size) at the bottom. Within
+      // the two active groups, manual sort_order wins (nulls sort last); discontinued stays alphabetical
+      // since there's no manual reorder UI for a retired group.
       return withPrices.sort((a, b) => {
-        if (a.status !== b.status) return a.status === 'discontinued' ? 1 : -1
+        const groupOf = (p: ProductWithPrice) => (p.status === 'discontinued' ? 2 : p.size === 'regular' ? 0 : 1)
+        const ga = groupOf(a)
+        const gb = groupOf(b)
+        if (ga !== gb) return ga - gb
+        if (ga !== 2) {
+          const oa = a.sort_order ?? Number.MAX_SAFE_INTEGER
+          const ob = b.sort_order ?? Number.MAX_SAFE_INTEGER
+          if (oa !== ob) return oa - ob
+        }
         if (a.flavor_name !== b.flavor_name) return a.flavor_name.localeCompare(b.flavor_name)
         return a.size.localeCompare(b.size)
       })
     },
   })
+}
+
+// Renumbers sort_order = index for every product in orderedIds (a single regular-or-junior group), so a
+// move-up/move-down swap persists as a full, unambiguous ordering rather than juggling fractional gaps.
+export async function reorderProducts(orderedIds: string[]) {
+  const results = await Promise.all(
+    orderedIds.map((id, index) => supabase.from('products').update({ sort_order: index }).eq('id', id)),
+  )
+  const failed = results.find((r) => r.error)
+  if (failed?.error) throw failed.error
 }
 
 export async function insertProduct(input: { flavor_name: string; size: ProductSize }) {

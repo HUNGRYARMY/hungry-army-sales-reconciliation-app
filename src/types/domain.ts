@@ -26,6 +26,7 @@ export interface Product {
   flavor_name: string
   size: ProductSize
   status: CatalogStatus
+  sort_order: number | null
 }
 
 export interface Promo {

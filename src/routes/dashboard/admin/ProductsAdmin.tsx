@@ -6,7 +6,9 @@ import {
   updateProductStatus,
   updateProductName,
   insertPrice,
+  reorderProducts,
   useInvalidateAdmin,
+  type ProductWithPrice,
 } from './hooks'
 import type { ProductSize } from '../../../types/domain'
 
@@ -105,6 +107,193 @@ export function ProductsAdmin() {
     }
   }
 
+  async function handleMove(group: ProductWithPrice[], index: number, direction: -1 | 1) {
+    const targetIndex = index + direction
+    if (targetIndex < 0 || targetIndex >= group.length) return
+    const reordered = [...group]
+    ;[reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]]
+    setBusyId(reordered[index].id)
+    setError(null)
+    try {
+      await reorderProducts(reordered.map((p) => p.id))
+      invalidate('admin-products')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const all = products.data ?? []
+  const activeRegular = all.filter((p) => p.status === 'active' && p.size === 'regular')
+  const activeJunior = all.filter((p) => p.status === 'active' && p.size === 'junior')
+  const discontinued = all.filter((p) => p.status === 'discontinued')
+
+  function renderNameCell(p: ProductWithPrice) {
+    if (nameEditId === p.id) {
+      return (
+        <div className="flex items-center gap-1.5">
+          <input
+            type="text"
+            autoFocus
+            value={nameValue}
+            onChange={(e) => setNameValue(e.target.value)}
+            className="w-32 rounded-md border border-app-border bg-app-bg px-2 py-1 text-xs text-app-text outline-none focus:border-app-accent"
+          />
+          <button
+            type="button"
+            disabled={busyId === p.id}
+            onClick={() => handleSaveName(p.id)}
+            className="rounded-md bg-app-accent px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            onClick={() => setNameEditId(null)}
+            className="rounded-md border border-app-border px-2 py-1 text-xs text-app-text-muted"
+          >
+            Cancel
+          </button>
+        </div>
+      )
+    }
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setNameEditId(p.id)
+          setNameValue(p.flavor_name)
+        }}
+        className="text-left hover:text-app-accent"
+        title="Click to rename"
+      >
+        {p.flavor_name}
+      </button>
+    )
+  }
+
+  function renderActionsCell(p: ProductWithPrice) {
+    if (priceEditId === p.id) {
+      return (
+        <div className="flex items-center gap-1.5">
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            value={priceValue}
+            onChange={(e) => setPriceValue(e.target.value)}
+            className="w-20 rounded-md border border-app-border bg-app-bg px-2 py-1 text-xs text-app-text outline-none focus:border-app-accent"
+          />
+          <input
+            type="date"
+            value={priceEffectiveDate}
+            onChange={(e) => setPriceEffectiveDate(e.target.value)}
+            className="rounded-md border border-app-border bg-app-bg px-2 py-1 text-xs text-app-text outline-none focus:border-app-accent"
+          />
+          <button
+            type="button"
+            disabled={busyId === p.id}
+            onClick={() => handleSavePrice(p.id)}
+            className="rounded-md bg-app-accent px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            onClick={() => setPriceEditId(null)}
+            className="rounded-md border border-app-border px-2 py-1 text-xs text-app-text-muted"
+          >
+            Cancel
+          </button>
+        </div>
+      )
+    }
+    return (
+      <div className="flex justify-end gap-1.5">
+        {p.status === 'active' && (
+          <button
+            type="button"
+            onClick={() => openPriceEditor(p.id, p.currentPrice)}
+            className="rounded-md border border-app-border px-3 py-1.5 text-xs text-app-text-muted hover:border-app-accent hover:text-app-text"
+          >
+            Update price
+          </button>
+        )}
+        <button
+          type="button"
+          disabled={busyId === p.id}
+          onClick={() => handleToggleStatus(p.id, p.status)}
+          className="rounded-md border border-app-border px-3 py-1.5 text-xs text-app-text-muted hover:border-app-accent hover:text-app-text disabled:opacity-50"
+        >
+          {p.status === 'active' ? 'Discontinue' : 'Reactivate'}
+        </button>
+      </div>
+    )
+  }
+
+  function renderGroup(title: string, group: ProductWithPrice[], reorderable: boolean) {
+    if (group.length === 0) return null
+    return (
+      <div className="overflow-x-auto rounded-lg border border-app-border bg-app-sidebar">
+        <h3 className="border-b border-app-border px-4 py-2 text-xs font-semibold uppercase tracking-wide text-app-text-muted">
+          {title}
+        </h3>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-app-border text-left text-xs text-app-text-muted">
+              {reorderable && <th className="px-4 py-2 font-medium">Order</th>}
+              <th className="px-4 py-2 font-medium">Flavor</th>
+              <th className="px-3 py-2 font-medium">Status</th>
+              <th className="px-3 py-2 text-right font-medium">Current price</th>
+              <th className="px-4 py-2 font-medium"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {group.map((p, index) => (
+              <tr key={p.id} className="border-b border-app-border last:border-b-0">
+                {reorderable && (
+                  <td className="px-4 py-2.5">
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        disabled={index === 0 || busyId === p.id}
+                        onClick={() => handleMove(group, index, -1)}
+                        className="rounded-md border border-app-border px-2 py-1 text-xs text-app-text-muted hover:border-app-accent hover:text-app-text disabled:opacity-30"
+                        title="Move up"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        disabled={index === group.length - 1 || busyId === p.id}
+                        onClick={() => handleMove(group, index, 1)}
+                        className="rounded-md border border-app-border px-2 py-1 text-xs text-app-text-muted hover:border-app-accent hover:text-app-text disabled:opacity-30"
+                        title="Move down"
+                      >
+                        ↓
+                      </button>
+                    </div>
+                  </td>
+                )}
+                <td className="px-4 py-2.5 text-app-text">{renderNameCell(p)}</td>
+                <td className="px-3 py-2.5">
+                  <span className={p.status === 'active' ? 'text-app-text' : 'text-app-text-faint'}>
+                    {p.status === 'active' ? 'Active' : 'Discontinued'}
+                  </span>
+                </td>
+                <td className="px-3 py-2.5 text-right text-app-text-muted">
+                  {p.currentPrice !== null ? `₱${p.currentPrice.toFixed(2)}` : '—'}
+                </td>
+                <td className="px-4 py-2.5">{renderActionsCell(p)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+
   return (
     <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
       <div className="h-fit rounded-lg border border-app-border bg-app-sidebar p-4">
@@ -139,134 +328,17 @@ export function ProductsAdmin() {
           {submitting ? 'Saving…' : 'Add product'}
         </button>
         <p className="mt-2 text-xs text-app-text-faint">
-          New products need a price added before they can be sold — the trigger that stamps sale prices
-          requires a price_history row. Click a flavor name in the table to rename it — unlike price, this
-          applies retroactively to past reports too, since they reference the same product record.
+          New products need a price added before they can be sold. Click a flavor name to rename it — unlike
+          price, renaming applies retroactively to past reports too, since they reference the same product
+          record. Use ↑/↓ to reorder within Regular or Junior — flavors can only move within their own size
+          group, never into the other one.
         </p>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-app-border bg-app-sidebar">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-app-border text-left text-xs text-app-text-muted">
-              <th className="px-4 py-2 font-medium">Flavor</th>
-              <th className="px-3 py-2 font-medium">Size</th>
-              <th className="px-3 py-2 font-medium">Status</th>
-              <th className="px-3 py-2 text-right font-medium">Current price</th>
-              <th className="px-4 py-2 font-medium"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {(products.data ?? []).map((p) => (
-              <tr key={p.id} className="border-b border-app-border last:border-b-0">
-                <td className="px-4 py-2.5 text-app-text">
-                  {nameEditId === p.id ? (
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        type="text"
-                        autoFocus
-                        value={nameValue}
-                        onChange={(e) => setNameValue(e.target.value)}
-                        className="w-32 rounded-md border border-app-border bg-app-bg px-2 py-1 text-xs text-app-text outline-none focus:border-app-accent"
-                      />
-                      <button
-                        type="button"
-                        disabled={busyId === p.id}
-                        onClick={() => handleSaveName(p.id)}
-                        className="rounded-md bg-app-accent px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
-                      >
-                        Save
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setNameEditId(null)}
-                        className="rounded-md border border-app-border px-2 py-1 text-xs text-app-text-muted"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setNameEditId(p.id)
-                        setNameValue(p.flavor_name)
-                      }}
-                      className="text-left hover:text-app-accent"
-                      title="Click to rename"
-                    >
-                      {p.flavor_name}
-                    </button>
-                  )}
-                </td>
-                <td className="px-3 py-2.5 text-app-text-muted">{p.size}</td>
-                <td className="px-3 py-2.5">
-                  <span className={p.status === 'active' ? 'text-app-text' : 'text-app-text-faint'}>
-                    {p.status === 'active' ? 'Active' : 'Discontinued'}
-                  </span>
-                </td>
-                <td className="px-3 py-2.5 text-right text-app-text-muted">
-                  {p.currentPrice !== null ? `₱${p.currentPrice.toFixed(2)}` : '—'}
-                </td>
-                <td className="px-4 py-2.5">
-                  {priceEditId === p.id ? (
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={priceValue}
-                        onChange={(e) => setPriceValue(e.target.value)}
-                        className="w-20 rounded-md border border-app-border bg-app-bg px-2 py-1 text-xs text-app-text outline-none focus:border-app-accent"
-                      />
-                      <input
-                        type="date"
-                        value={priceEffectiveDate}
-                        onChange={(e) => setPriceEffectiveDate(e.target.value)}
-                        className="rounded-md border border-app-border bg-app-bg px-2 py-1 text-xs text-app-text outline-none focus:border-app-accent"
-                      />
-                      <button
-                        type="button"
-                        disabled={busyId === p.id}
-                        onClick={() => handleSavePrice(p.id)}
-                        className="rounded-md bg-app-accent px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
-                      >
-                        Save
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPriceEditId(null)}
-                        className="rounded-md border border-app-border px-2 py-1 text-xs text-app-text-muted"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex justify-end gap-1.5">
-                      {p.status === 'active' && (
-                        <button
-                          type="button"
-                          onClick={() => openPriceEditor(p.id, p.currentPrice)}
-                          className="rounded-md border border-app-border px-3 py-1.5 text-xs text-app-text-muted hover:border-app-accent hover:text-app-text"
-                        >
-                          Update price
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        disabled={busyId === p.id}
-                        onClick={() => handleToggleStatus(p.id, p.status)}
-                        className="rounded-md border border-app-border px-3 py-1.5 text-xs text-app-text-muted hover:border-app-accent hover:text-app-text disabled:opacity-50"
-                      >
-                        {p.status === 'active' ? 'Discontinue' : 'Reactivate'}
-                      </button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="space-y-4">
+        {renderGroup('Regular flavors', activeRegular, true)}
+        {renderGroup('Junior flavors', activeJunior, true)}
+        {renderGroup('Discontinued', discontinued, false)}
       </div>
     </div>
   )
