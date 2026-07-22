@@ -247,6 +247,96 @@ export async function insertSpotAudit(input: {
   if (error) throw error
 }
 
+export interface FlavorBreakdownRow {
+  flavorName: string
+  unitsDirect: number
+  unitsViaBundles: number
+  unitsTotal: number
+  revenue: number
+}
+
+export interface FlavorBreakdown {
+  rows: FlavorBreakdownRow[]
+  bundleCount: number
+  bundleRevenue: number
+}
+
+export function useFlavorBreakdown(branchId: string | null, startDate: string, endDate: string) {
+  return useQuery({
+    queryKey: ['dashboard-flavor-breakdown', branchId, startDate, endDate],
+    queryFn: async (): Promise<FlavorBreakdown> => {
+      let saleQuery = supabase
+        .from('sale_tally')
+        .select('qty_sold, line_revenue, products(flavor_name)')
+        .eq('is_void', false)
+        .gte('date', startDate)
+        .lte('date', endDate)
+      if (branchId) saleQuery = saleQuery.eq('branch_id', branchId)
+      const saleRes = await saleQuery
+      if (saleRes.error) throw saleRes.error
+
+      let bundleQuery = supabase
+        .from('bundle_sale')
+        .select('qty_bundles_sold, line_revenue, bundle_id')
+        .eq('is_void', false)
+        .gte('date', startDate)
+        .lte('date', endDate)
+      if (branchId) bundleQuery = bundleQuery.eq('branch_id', branchId)
+      const bundleRes = await bundleQuery
+      if (bundleRes.error) throw bundleRes.error
+
+      const componentsRes = await supabase
+        .from('bundle_components')
+        .select('bundle_id, qty_per_bundle, products(flavor_name)')
+      if (componentsRes.error) throw componentsRes.error
+
+      const byFlavor = new Map<string, { unitsDirect: number; unitsViaBundles: number; revenue: number }>()
+      function bucket(flavorName: string) {
+        if (!byFlavor.has(flavorName)) byFlavor.set(flavorName, { unitsDirect: 0, unitsViaBundles: 0, revenue: 0 })
+        return byFlavor.get(flavorName)!
+      }
+
+      for (const r of saleRes.data ?? []) {
+        const flavorName = (r as any).products?.flavor_name ?? 'Unknown'
+        const b = bucket(flavorName)
+        b.unitsDirect += r.qty_sold
+        b.revenue += Number(r.line_revenue)
+      }
+
+      let bundleCount = 0
+      let bundleRevenue = 0
+      const componentsByBundle = new Map<string, { qty_per_bundle: number; flavorName: string }[]>()
+      for (const c of componentsRes.data ?? []) {
+        const flavorName = (c as any).products?.flavor_name ?? 'Unknown'
+        const list = componentsByBundle.get(c.bundle_id) ?? []
+        list.push({ qty_per_bundle: c.qty_per_bundle, flavorName })
+        componentsByBundle.set(c.bundle_id, list)
+      }
+      for (const bs of bundleRes.data ?? []) {
+        bundleCount += bs.qty_bundles_sold
+        bundleRevenue += Number(bs.line_revenue)
+        const components = componentsByBundle.get(bs.bundle_id) ?? []
+        for (const c of components) {
+          const b = bucket(c.flavorName)
+          b.unitsViaBundles += bs.qty_bundles_sold * c.qty_per_bundle
+        }
+      }
+
+      const rows: FlavorBreakdownRow[] = Array.from(byFlavor.entries())
+        .map(([flavorName, v]) => ({
+          flavorName,
+          unitsDirect: v.unitsDirect,
+          unitsViaBundles: v.unitsViaBundles,
+          unitsTotal: v.unitsDirect + v.unitsViaBundles,
+          revenue: v.revenue,
+        }))
+        .sort((a, b) => b.unitsTotal - a.unitsTotal)
+
+      return { rows, bundleCount, bundleRevenue }
+    },
+  })
+}
+
 export function useInvalidateDashboard() {
   const qc = useQueryClient()
   return () => {
