@@ -145,6 +145,50 @@ export function useShrinkageRows(branchId: string | null, date: string) {
   })
 }
 
+export interface DiscountReviewRow {
+  id: string
+  branchName: string
+  productLabel: string
+  qtySold: number
+  manualDiscountRate: number | null
+  discountReason: string | null
+  enteredByName: string
+  timestamp: string
+}
+
+export function useDiscountReviewRows(branchId: string | null) {
+  return useQuery({
+    queryKey: ['dashboard-discount-review', branchId],
+    queryFn: async (): Promise<DiscountReviewRow[]> => {
+      let q = supabase
+        .from('sale_tally')
+        .select(
+          'id, qty_sold, manual_discount_rate, discount_reason, timestamp, branches(name), products(flavor_name, size), profiles!sale_tally_entered_by_fkey(full_name)',
+        )
+        .eq('needs_review', true)
+        .order('timestamp', { ascending: false })
+      if (branchId) q = q.eq('branch_id', branchId)
+      const { data, error } = await q
+      if (error) throw error
+      return (data ?? []).map((r: any) => ({
+        id: r.id,
+        branchName: r.branches?.name ?? 'Branch',
+        productLabel: r.products ? `${r.products.flavor_name} (${r.products.size})` : 'Product',
+        qtySold: r.qty_sold,
+        manualDiscountRate: r.manual_discount_rate !== null ? Number(r.manual_discount_rate) : null,
+        discountReason: r.discount_reason,
+        enteredByName: r.profiles?.full_name ?? 'Unknown',
+        timestamp: r.timestamp,
+      }))
+    },
+  })
+}
+
+export async function markDiscountReviewed(id: string, notes: string | null) {
+  const { error } = await supabase.rpc('mark_discount_reviewed', { p_id: id, p_notes: notes })
+  if (error) throw error
+}
+
 export function useInvalidateDashboard() {
   const qc = useQueryClient()
   return () => {
