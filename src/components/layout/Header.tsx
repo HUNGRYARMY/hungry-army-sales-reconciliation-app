@@ -1,4 +1,5 @@
 import { useAuth } from '../../lib/auth/AuthContext'
+import logo from '../../assets/hungry-army-logo.png'
 
 const ROLE_LABELS: Record<string, string> = {
   branch_staff: 'Branch Staff',
@@ -13,14 +14,8 @@ export function Header() {
   return (
     <header className="flex items-center justify-between border-b border-app-border bg-app-sidebar px-4 py-3">
       <div className="flex items-center gap-3">
-        {/* Logo placeholder — swap for the real Hungry Army mark whenever it's provided */}
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-app-accent text-sm font-bold text-white">
-          HA
-        </div>
-        <div className="leading-tight">
-          <div className="text-sm font-semibold text-app-text">Hungry Army</div>
-          <div className="text-xs text-app-text-muted">Sales &amp; Cash Reconciliation</div>
-        </div>
+        <img src={logo} alt="Hungry Army" className="h-8 w-auto" />
+        <div className="text-xs text-app-text-muted">Sales &amp; Cash Reconciliation</div>
       </div>
 
       {profile && (

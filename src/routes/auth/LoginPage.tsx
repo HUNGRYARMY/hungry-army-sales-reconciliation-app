@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { supabase } from '../../lib/supabaseClient'
+import logo from '../../assets/hungry-army-logo.png'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
@@ -23,10 +24,7 @@ export function LoginPage() {
         className="w-full max-w-sm rounded-lg border border-app-border bg-app-card p-6 shadow-lg"
       >
         <div className="mb-6 flex flex-col items-center gap-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-app-accent text-lg font-bold text-white">
-            HA
-          </div>
-          <h1 className="text-lg font-semibold">Hungry Army</h1>
+          <img src={logo} alt="Hungry Army" className="h-16 w-auto" />
           <p className="text-sm text-app-text-muted">Sales &amp; Cash Reconciliation</p>
         </div>
 
