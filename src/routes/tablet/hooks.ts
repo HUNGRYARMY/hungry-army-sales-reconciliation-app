@@ -49,6 +49,7 @@ export interface RecentTallyRow {
   discountType?: string
   timestamp: string
   isVoid: boolean
+  enteredBy: string
 }
 
 export function useTodayActivity(branchId: string | null) {
@@ -60,14 +61,14 @@ export function useTodayActivity(branchId: string | null) {
       const [sales, bundles] = await Promise.all([
         supabase
           .from('sale_tally')
-          .select('id, qty_sold, discount_type, timestamp, is_void, products(flavor_name, size)')
+          .select('id, qty_sold, discount_type, timestamp, is_void, entered_by, products(flavor_name, size)')
           .eq('branch_id', branchId!)
           .eq('date', businessDate)
           .order('timestamp', { ascending: false })
           .limit(30),
         supabase
           .from('bundle_sale')
-          .select('id, qty_bundles_sold, timestamp, is_void, bundles(name)')
+          .select('id, qty_bundles_sold, timestamp, is_void, entered_by, bundles(name)')
           .eq('branch_id', branchId!)
           .eq('date', businessDate)
           .order('timestamp', { ascending: false })
@@ -84,6 +85,7 @@ export function useTodayActivity(branchId: string | null) {
         discountType: r.discount_type,
         timestamp: r.timestamp,
         isVoid: r.is_void,
+        enteredBy: r.entered_by,
       }))
       const bundleRows: RecentTallyRow[] = (bundles.data ?? []).map((r: any) => ({
         id: r.id,
@@ -92,6 +94,7 @@ export function useTodayActivity(branchId: string | null) {
         qty: r.qty_bundles_sold,
         timestamp: r.timestamp,
         isVoid: r.is_void,
+        enteredBy: r.entered_by,
       }))
 
       return [...saleRows, ...bundleRows].sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 30)

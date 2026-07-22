@@ -186,7 +186,7 @@ export function TabletHome() {
             <h2 className="border-b border-app-border px-4 py-3 text-sm font-semibold text-app-text">
               Today's activity
             </h2>
-            <RecentActivity rows={activity.data ?? []} />
+            <RecentActivity rows={activity.data ?? []} onVoided={invalidateActivity} />
           </div>
         </div>
       )}
