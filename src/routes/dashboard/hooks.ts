@@ -78,6 +78,73 @@ export function useCashVarianceRows(branchId: string | null, date: string) {
   })
 }
 
+export interface ShrinkageRow {
+  branchId: string
+  branchName: string
+  productId: string
+  productLabel: string
+  carryoverIn: number | null
+  shippedIn: number | null
+  available: number | null
+  sold: number | null
+  wasted: number | null
+  carryoverOut: number | null
+  variance: number | null
+  explanation: string | null
+  closed: boolean
+}
+
+export function useShrinkageRows(branchId: string | null, date: string) {
+  return useQuery({
+    queryKey: ['dashboard-shrinkage', branchId, date],
+    queryFn: async (): Promise<ShrinkageRow[]> => {
+      const branchesRes = await supabase.from('branches').select('id, name').order('name')
+      if (branchesRes.error) throw branchesRes.error
+      const branches = (branchesRes.data ?? []).filter((b) => !branchId || b.id === branchId)
+
+      const productsRes = await supabase
+        .from('products')
+        .select('id, flavor_name, size')
+        .eq('status', 'active')
+        .order('flavor_name')
+        .order('size')
+      if (productsRes.error) throw productsRes.error
+
+      let ledgerQuery = supabase
+        .from('daily_product_ledger')
+        .select('branch_id, product_id, carryover_in, shipped_in, available, sold, wasted, carryover_out, unexplained_variance, explanation')
+        .eq('date', date)
+      if (branchId) ledgerQuery = ledgerQuery.eq('branch_id', branchId)
+      const ledgerRes = await ledgerQuery
+      if (ledgerRes.error) throw ledgerRes.error
+      const byKey = new Map((ledgerRes.data ?? []).map((l: any) => [`${l.branch_id}:${l.product_id}`, l]))
+
+      const rows: ShrinkageRow[] = []
+      for (const b of branches) {
+        for (const p of productsRes.data ?? []) {
+          const l = byKey.get(`${b.id}:${p.id}`)
+          rows.push({
+            branchId: b.id,
+            branchName: b.name,
+            productId: p.id,
+            productLabel: `${p.flavor_name} (${p.size})`,
+            carryoverIn: l ? l.carryover_in : null,
+            shippedIn: l ? l.shipped_in : null,
+            available: l ? l.available : null,
+            sold: l ? l.sold : null,
+            wasted: l ? l.wasted : null,
+            carryoverOut: l ? l.carryover_out : null,
+            variance: l ? l.unexplained_variance : null,
+            explanation: l?.explanation ?? null,
+            closed: !!l,
+          })
+        }
+      }
+      return rows
+    },
+  })
+}
+
 export function useInvalidateDashboard() {
   const qc = useQueryClient()
   return () => {
