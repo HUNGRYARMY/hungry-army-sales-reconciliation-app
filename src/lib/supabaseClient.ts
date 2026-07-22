@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Database } from '../types/database.types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -10,4 +9,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
-export const supabase = createClient<Database>(supabaseUrl ?? '', supabaseAnonKey ?? '')
+// Not parameterized with the generated Database type yet (see src/types/database.types.ts) — that placeholder
+// makes every table resolve to `never`, which breaks .insert()/.select() typing worse than having no generic
+// at all. Once `supabase gen types` can run (needs local Docker), re-add createClient<Database>(...) here.
+export const supabase = createClient(supabaseUrl ?? '', supabaseAnonKey ?? '')
