@@ -44,3 +44,38 @@ export function useInvalidateTodayDeliveries() {
   const qc = useQueryClient()
   return () => qc.invalidateQueries({ queryKey: ['today-deliveries'] })
 }
+
+export interface ProductDeliveryGroup {
+  productLabel: string
+  entries: DeliveryRow[] // oldest first, so "1st delivery"/"2nd delivery" numbering reads naturally
+  total: number
+}
+
+export interface BranchDeliveryGroup {
+  branchName: string
+  products: ProductDeliveryGroup[]
+}
+
+// Same flavor delivered more than once in a day (e.g. a top-up run) showed as separate, unrelated-looking
+// rows. Nests deliveries branch -> product so repeat deliveries of one flavor stack together with a total.
+export function groupDeliveriesByBranchAndProduct(rows: DeliveryRow[]): BranchDeliveryGroup[] {
+  const byBranch = new Map<string, Map<string, DeliveryRow[]>>()
+  for (const r of rows) {
+    if (!byBranch.has(r.branchName)) byBranch.set(r.branchName, new Map())
+    const byProduct = byBranch.get(r.branchName)!
+    if (!byProduct.has(r.productLabel)) byProduct.set(r.productLabel, [])
+    byProduct.get(r.productLabel)!.push(r)
+  }
+
+  return Array.from(byBranch.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([branchName, byProduct]) => ({
+      branchName,
+      products: Array.from(byProduct.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([productLabel, entries]) => {
+          const ordered = [...entries].sort((a, b) => a.deliveryTime.localeCompare(b.deliveryTime))
+          return { productLabel, entries: ordered, total: ordered.reduce((sum, e) => sum + e.qty, 0) }
+        }),
+    }))
+}

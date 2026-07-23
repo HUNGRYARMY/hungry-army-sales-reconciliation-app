@@ -1,11 +1,19 @@
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { AppShell } from '../../components/layout/AppShell'
 import { useToast, ToastView } from '../../components/Toast'
 import { useAuth } from '../../lib/auth/AuthContext'
 import { supabase } from '../../lib/supabaseClient'
 import { getBusinessDate } from '../../lib/businessDate'
+import { formatTimestampTime } from '../../lib/formatTime'
 import { useActiveProducts } from '../tablet/hooks'
-import { useAllBranches, useTodayDeliveries, useInvalidateTodayDeliveries } from './hooks'
+import { useAllBranches, useTodayDeliveries, useInvalidateTodayDeliveries, groupDeliveriesByBranchAndProduct } from './hooks'
+
+function ordinal(n: number): string {
+  if (n % 10 === 1 && n % 100 !== 11) return `${n}st`
+  if (n % 10 === 2 && n % 100 !== 12) return `${n}nd`
+  if (n % 10 === 3 && n % 100 !== 13) return `${n}rd`
+  return `${n}th`
+}
 
 export function CommissaryHome() {
   const { profile } = useAuth()
@@ -19,6 +27,8 @@ export function CommissaryHome() {
   const [productId, setProductId] = useState('')
   const [qty, setQty] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  const branchGroups = useMemo(() => groupDeliveriesByBranchAndProduct(deliveries.data ?? []), [deliveries.data])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -121,27 +131,42 @@ export function CommissaryHome() {
           <h2 className="border-b border-app-border px-4 py-3 text-sm font-semibold text-app-text">
             Today's deliveries — all branches
           </h2>
-          {(deliveries.data ?? []).length === 0 ? (
+          {branchGroups.length === 0 ? (
             <p className="px-4 py-6 text-center text-sm text-app-text-muted">No deliveries logged yet today.</p>
           ) : (
-            <ul className="divide-y divide-app-border">
-              {(deliveries.data ?? []).map((d, i, all) => {
-                const isNewBranch = i === 0 || all[i - 1].branchName !== d.branchName
-                return (
-                  <li key={d.id}>
-                    {isNewBranch && (
-                      <div className="bg-app-bg px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-app-text-muted">
-                        {d.branchName}
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between px-4 py-2.5 text-sm">
-                      <span className="text-app-text">{d.productLabel}</span>
-                      <span className="text-app-text-muted">+{d.qty}</span>
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
+            <div className="divide-y divide-app-border">
+              {branchGroups.map((branch) => (
+                <div key={branch.branchName}>
+                  <div className="bg-app-bg px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-app-text-muted">
+                    {branch.branchName}
+                  </div>
+                  <ul className="divide-y divide-app-border">
+                    {branch.products.map((p) => (
+                      <li key={p.productLabel} className="px-4 py-2.5">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-app-text">{p.productLabel}</span>
+                          <span className="font-medium text-app-text">
+                            {p.entries.length > 1 ? `Total: ${p.total}` : `+${p.total}`}
+                          </span>
+                        </div>
+                        {p.entries.length > 1 && (
+                          <ul className="mt-1.5 space-y-1 border-l border-app-border pl-3">
+                            {p.entries.map((e, idx) => (
+                              <li key={e.id} className="flex items-center justify-between text-xs text-app-text-muted">
+                                <span>
+                                  {ordinal(idx + 1)} delivery · {formatTimestampTime(e.deliveryTime)}
+                                </span>
+                                <span>+{e.qty}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
