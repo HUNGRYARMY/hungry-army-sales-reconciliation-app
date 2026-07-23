@@ -3,6 +3,7 @@ import {
   useAllBundlesAdmin,
   insertBundle,
   updateBundleStatus,
+  updateBundleDetails,
   useBundleComponents,
   insertBundleComponent,
   updateBundleComponentQty,
@@ -10,6 +11,7 @@ import {
   useInvalidateAdmin,
 } from './hooks'
 import { getErrorMessage } from '../../../lib/errorMessage'
+import type { Bundle } from '../../../types/domain'
 
 export function BundlesAdmin() {
   const bundles = useAllBundlesAdmin()
@@ -21,6 +23,10 @@ export function BundlesAdmin() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
+
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editPrice, setEditPrice] = useState('')
 
   const [selectedBundleId, setSelectedBundleId] = useState<string | null>(null)
   const components = useBundleComponents(selectedBundleId)
@@ -53,6 +59,31 @@ export function BundlesAdmin() {
     setBusyId(id)
     try {
       await updateBundleStatus(id, status === 'active' ? 'discontinued' : 'active')
+      invalidate('admin-bundles')
+    } catch (e) {
+      setError(getErrorMessage(e))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  function openEditor(b: Bundle) {
+    setEditId(b.id)
+    setEditName(b.name)
+    setEditPrice(String(b.price))
+  }
+
+  async function handleSaveEdit(id: string) {
+    const priceNum = Number(editPrice)
+    if (!editName.trim() || !Number.isFinite(priceNum) || priceNum < 0) {
+      setError('Enter a name and a valid price')
+      return
+    }
+    setBusyId(id)
+    setError(null)
+    try {
+      await updateBundleDetails(id, { name: editName.trim(), price: priceNum })
+      setEditId(null)
       invalidate('admin-bundles')
     } catch (e) {
       setError(getErrorMessage(e))
@@ -95,6 +126,146 @@ export function BundlesAdmin() {
 
   const activeProducts = (products.data ?? []).filter((p) => p.status === 'active')
 
+  function renderRow(b: Bundle) {
+    if (editId === b.id) {
+      return (
+        <tr key={b.id} className="border-b border-app-border last:border-b-0">
+          <td className="px-4 py-2.5">
+            <input
+              type="text"
+              autoFocus
+              value={editName}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => setEditName(e.target.value)}
+              className="w-32 rounded-md border border-app-border bg-app-bg px-2 py-1 text-xs text-app-text outline-none focus:border-app-accent"
+            />
+          </td>
+          <td className="px-3 py-2.5 text-right">
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              value={editPrice}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => setEditPrice(e.target.value)}
+              className="w-20 rounded-md border border-app-border bg-app-bg px-2 py-1 text-right text-xs text-app-text outline-none focus:border-app-accent"
+            />
+          </td>
+          <td className="px-3 py-2.5">
+            <span className={b.status === 'active' ? 'text-app-text' : 'text-app-text-faint'}>
+              {b.status === 'active' ? 'Active' : 'Discontinued'}
+            </span>
+          </td>
+          <td className="px-4 py-2.5">
+            <div className="flex justify-end gap-1.5">
+              <button
+                type="button"
+                disabled={busyId === b.id}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleSaveEdit(b.id)
+                }}
+                className="rounded-md bg-app-accent px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setEditId(null)
+                }}
+                className="rounded-md border border-app-border px-2 py-1 text-xs text-app-text-muted"
+              >
+                Cancel
+              </button>
+            </div>
+          </td>
+        </tr>
+      )
+    }
+    return (
+      <tr
+        key={b.id}
+        onClick={() => setSelectedBundleId(b.id)}
+        className={`cursor-pointer border-b border-app-border last:border-b-0 ${
+          selectedBundleId === b.id ? 'bg-app-accent/10' : ''
+        }`}
+      >
+        <td className="px-4 py-2.5">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              openEditor(b)
+            }}
+            className="text-left text-app-text hover:text-app-accent"
+            title="Click to edit"
+          >
+            {b.name}
+          </button>
+        </td>
+        <td className="px-3 py-2.5 text-right">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              openEditor(b)
+            }}
+            className="text-app-text-muted hover:text-app-accent"
+            title="Click to edit"
+          >
+            ₱{Number(b.price).toFixed(2)}
+          </button>
+        </td>
+        <td className="px-3 py-2.5">
+          <span className={b.status === 'active' ? 'text-app-text' : 'text-app-text-faint'}>
+            {b.status === 'active' ? 'Active' : 'Discontinued'}
+          </span>
+        </td>
+        <td className="px-4 py-2.5 text-right">
+          <button
+            type="button"
+            disabled={busyId === b.id}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleToggleBundle(b.id, b.status)
+            }}
+            className="rounded-md border border-app-border px-3 py-1.5 text-xs text-app-text-muted hover:border-app-accent hover:text-app-text disabled:opacity-50"
+          >
+            {b.status === 'active' ? 'Discontinue' : 'Reactivate'}
+          </button>
+        </td>
+      </tr>
+    )
+  }
+
+  function renderGroup(title: string, group: Bundle[]) {
+    if (group.length === 0) return null
+    return (
+      <div className="overflow-x-auto rounded-lg border border-app-border bg-app-sidebar">
+        <h3 className="border-b border-app-border px-4 py-2 text-xs font-semibold uppercase tracking-wide text-app-text-muted">
+          {title}
+        </h3>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-app-border text-left text-xs text-app-text-muted">
+              <th className="px-4 py-2 font-medium">Name</th>
+              <th className="px-3 py-2 text-right font-medium">Price</th>
+              <th className="px-3 py-2 font-medium">Status</th>
+              <th className="px-4 py-2 font-medium"></th>
+            </tr>
+          </thead>
+          <tbody>{group.map(renderRow)}</tbody>
+        </table>
+      </div>
+    )
+  }
+
+  const all = bundles.data ?? []
+  const active = all.filter((b) => b.status === 'active')
+  const discontinued = all.filter((b) => b.status === 'discontinued')
+
   return (
     <div className="space-y-4">
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
@@ -129,58 +300,19 @@ export function BundlesAdmin() {
           >
             {submitting ? 'Saving…' : 'Add bundle'}
           </button>
+          <p className="mt-2 text-xs text-app-text-faint">
+            Click a name or price to edit it. Click a row to manage its components below.
+          </p>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-app-border bg-app-sidebar">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-app-border text-left text-xs text-app-text-muted">
-                <th className="px-4 py-2 font-medium">Name</th>
-                <th className="px-3 py-2 text-right font-medium">Price</th>
-                <th className="px-3 py-2 font-medium">Status</th>
-                <th className="px-4 py-2 font-medium"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {(bundles.data ?? []).map((b) => (
-                <tr
-                  key={b.id}
-                  onClick={() => setSelectedBundleId(b.id)}
-                  className={`cursor-pointer border-b border-app-border last:border-b-0 ${
-                    selectedBundleId === b.id ? 'bg-app-accent/10' : ''
-                  }`}
-                >
-                  <td className="px-4 py-2.5 text-app-text">{b.name}</td>
-                  <td className="px-3 py-2.5 text-right text-app-text-muted">₱{Number(b.price).toFixed(2)}</td>
-                  <td className="px-3 py-2.5">
-                    <span className={b.status === 'active' ? 'text-app-text' : 'text-app-text-faint'}>
-                      {b.status === 'active' ? 'Active' : 'Discontinued'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5 text-right">
-                    <button
-                      type="button"
-                      disabled={busyId === b.id}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleToggleBundle(b.id, b.status)
-                      }}
-                      className="rounded-md border border-app-border px-3 py-1.5 text-xs text-app-text-muted hover:border-app-accent hover:text-app-text disabled:opacity-50"
-                    >
-                      {b.status === 'active' ? 'Discontinue' : 'Reactivate'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {(bundles.data ?? []).length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-app-text-muted">
-                    No bundles yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <div className="space-y-4">
+          {renderGroup('Active', active)}
+          {renderGroup('Discontinued', discontinued)}
+          {all.length === 0 && (
+            <div className="rounded-lg border border-app-border bg-app-sidebar px-4 py-6 text-center text-app-text-muted">
+              No bundles yet.
+            </div>
+          )}
         </div>
       </div>
 

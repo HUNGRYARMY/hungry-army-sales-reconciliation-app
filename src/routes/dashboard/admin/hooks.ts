@@ -146,6 +146,11 @@ export async function updatePromoStatus(id: string, status: CatalogStatus) {
   if (error) throw error
 }
 
+export async function updatePromoDetails(id: string, patch: { name: string; rate: number }) {
+  const { error } = await supabase.from('promos').update(patch).eq('id', id)
+  if (error) throw error
+}
+
 export function useAllBundlesAdmin() {
   return useQuery({
     queryKey: ['admin-bundles'],
@@ -164,6 +169,11 @@ export async function insertBundle(input: { name: string; price: number }) {
 
 export async function updateBundleStatus(id: string, status: CatalogStatus) {
   const { error } = await supabase.from('bundles').update({ status }).eq('id', id)
+  if (error) throw error
+}
+
+export async function updateBundleDetails(id: string, patch: { name: string; price: number }) {
+  const { error } = await supabase.from('bundles').update(patch).eq('id', id)
   if (error) throw error
 }
 
