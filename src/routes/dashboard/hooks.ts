@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabaseClient'
+import type { ProductSize } from '../../types/domain'
 
 export interface VarianceThresholdMap {
   // branch_id (or 'global') -> threshold value
@@ -249,6 +250,7 @@ export async function insertSpotAudit(input: {
 
 export interface FlavorBreakdownRow {
   flavorName: string
+  size: ProductSize
   unitsDirect: number
   unitsViaBundles: number
   unitsTotal: number
@@ -267,7 +269,7 @@ export function useFlavorBreakdown(branchId: string | null, startDate: string, e
     queryFn: async (): Promise<FlavorBreakdown> => {
       let saleQuery = supabase
         .from('sale_tally')
-        .select('qty_sold, line_revenue, products(flavor_name)')
+        .select('qty_sold, line_revenue, products(flavor_name, size)')
         .eq('is_void', false)
         .gte('date', startDate)
         .lte('date', endDate)
@@ -287,29 +289,34 @@ export function useFlavorBreakdown(branchId: string | null, startDate: string, e
 
       const componentsRes = await supabase
         .from('bundle_components')
-        .select('bundle_id, qty_per_bundle, products(flavor_name)')
+        .select('bundle_id, qty_per_bundle, products(flavor_name, size)')
       if (componentsRes.error) throw componentsRes.error
 
-      const byFlavor = new Map<string, { unitsDirect: number; unitsViaBundles: number; revenue: number }>()
-      function bucket(flavorName: string) {
-        if (!byFlavor.has(flavorName)) byFlavor.set(flavorName, { unitsDirect: 0, unitsViaBundles: 0, revenue: 0 })
-        return byFlavor.get(flavorName)!
+      // Bucketed by flavor + size — regular and junior of the same flavor are distinct products (own
+      // price/ledger), so they're kept as separate rows rather than merged.
+      const byFlavor = new Map<string, { flavorName: string; size: ProductSize; unitsDirect: number; unitsViaBundles: number; revenue: number }>()
+      function bucket(flavorName: string, size: ProductSize) {
+        const key = `${flavorName}__${size}`
+        if (!byFlavor.has(key)) byFlavor.set(key, { flavorName, size, unitsDirect: 0, unitsViaBundles: 0, revenue: 0 })
+        return byFlavor.get(key)!
       }
 
       for (const r of saleRes.data ?? []) {
         const flavorName = (r as any).products?.flavor_name ?? 'Unknown'
-        const b = bucket(flavorName)
+        const size = ((r as any).products?.size ?? 'regular') as ProductSize
+        const b = bucket(flavorName, size)
         b.unitsDirect += r.qty_sold
         b.revenue += Number(r.line_revenue)
       }
 
       let bundleCount = 0
       let bundleRevenue = 0
-      const componentsByBundle = new Map<string, { qty_per_bundle: number; flavorName: string }[]>()
+      const componentsByBundle = new Map<string, { qty_per_bundle: number; flavorName: string; size: ProductSize }[]>()
       for (const c of componentsRes.data ?? []) {
         const flavorName = (c as any).products?.flavor_name ?? 'Unknown'
+        const size = ((c as any).products?.size ?? 'regular') as ProductSize
         const list = componentsByBundle.get(c.bundle_id) ?? []
-        list.push({ qty_per_bundle: c.qty_per_bundle, flavorName })
+        list.push({ qty_per_bundle: c.qty_per_bundle, flavorName, size })
         componentsByBundle.set(c.bundle_id, list)
       }
       for (const bs of bundleRes.data ?? []) {
@@ -317,20 +324,25 @@ export function useFlavorBreakdown(branchId: string | null, startDate: string, e
         bundleRevenue += Number(bs.line_revenue)
         const components = componentsByBundle.get(bs.bundle_id) ?? []
         for (const c of components) {
-          const b = bucket(c.flavorName)
+          const b = bucket(c.flavorName, c.size)
           b.unitsViaBundles += bs.qty_bundles_sold * c.qty_per_bundle
         }
       }
 
-      const rows: FlavorBreakdownRow[] = Array.from(byFlavor.entries())
-        .map(([flavorName, v]) => ({
-          flavorName,
+      // Regular flavors first, then junior — within each size group, highest-selling first.
+      const rows: FlavorBreakdownRow[] = Array.from(byFlavor.values())
+        .map((v) => ({
+          flavorName: v.flavorName,
+          size: v.size,
           unitsDirect: v.unitsDirect,
           unitsViaBundles: v.unitsViaBundles,
           unitsTotal: v.unitsDirect + v.unitsViaBundles,
           revenue: v.revenue,
         }))
-        .sort((a, b) => b.unitsTotal - a.unitsTotal)
+        .sort((a, b) => {
+          if (a.size !== b.size) return a.size === 'regular' ? -1 : 1
+          return b.unitsTotal - a.unitsTotal
+        })
 
       return { rows, bundleCount, bundleRevenue }
     },

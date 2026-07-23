@@ -48,6 +48,7 @@ export function FlavorBreakdownView({ branchId }: { branchId: string | null }) {
           <thead>
             <tr className="border-b border-app-border text-left text-xs text-app-text-muted">
               <th className="px-4 py-2 font-medium">Flavor</th>
+              <th className="px-3 py-2 font-medium">Size</th>
               <th className="px-3 py-2 text-right font-medium">Units (direct)</th>
               <th className="px-3 py-2 text-right font-medium">Units (via bundles)</th>
               <th className="px-3 py-2 text-right font-medium">Total units</th>
@@ -55,18 +56,25 @@ export function FlavorBreakdownView({ branchId }: { branchId: string | null }) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
-              <tr key={r.flavorName} className="border-b border-app-border last:border-b-0">
-                <td className="px-4 py-2.5 text-app-text">{r.flavorName}</td>
-                <td className="px-3 py-2.5 text-right text-app-text-muted">{r.unitsDirect}</td>
-                <td className="px-3 py-2.5 text-right text-app-text-muted">{r.unitsViaBundles}</td>
-                <td className="px-3 py-2.5 text-right font-medium text-app-text">{r.unitsTotal}</td>
-                <td className="px-4 py-2.5 text-right text-app-text-muted">{peso(r.revenue)}</td>
-              </tr>
-            ))}
+            {rows.map((r, i) => {
+              const startsJuniorGroup = r.size === 'junior' && rows[i - 1]?.size === 'regular'
+              return (
+                <tr
+                  key={`${r.flavorName}__${r.size}`}
+                  className={`border-b border-app-border last:border-b-0 ${startsJuniorGroup ? 'border-t-2 border-t-app-border' : ''}`}
+                >
+                  <td className="px-4 py-2.5 text-app-text">{r.flavorName}</td>
+                  <td className="px-3 py-2.5 text-app-text-muted">{r.size === 'regular' ? 'Regular' : 'Junior'}</td>
+                  <td className="px-3 py-2.5 text-right text-app-text-muted">{r.unitsDirect}</td>
+                  <td className="px-3 py-2.5 text-right text-app-text-muted">{r.unitsViaBundles}</td>
+                  <td className="px-3 py-2.5 text-right font-medium text-app-text">{r.unitsTotal}</td>
+                  <td className="px-4 py-2.5 text-right text-app-text-muted">{peso(r.revenue)}</td>
+                </tr>
+              )
+            })}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-app-text-muted">
+                <td colSpan={6} className="px-4 py-6 text-center text-app-text-muted">
                   No sales in this range.
                 </td>
               </tr>
@@ -76,6 +84,7 @@ export function FlavorBreakdownView({ branchId }: { branchId: string | null }) {
             <tfoot>
               <tr className="border-t border-app-border text-sm font-medium">
                 <td className="px-4 py-2.5 text-app-text">Total</td>
+                <td />
                 <td />
                 <td />
                 <td className="px-3 py-2.5 text-right text-app-text">{totalUnits}</td>
