@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAllBranchesAdmin, insertBranch, updateBranch, reorderBranches, useInvalidateAdmin } from './hooks'
 import { getErrorMessage } from '../../../lib/errorMessage'
+import { formatTime12h } from '../../../lib/formatTime'
 import type { Branch } from '../../../types/domain'
 
 export function BranchesAdmin() {
@@ -227,7 +228,7 @@ export function BranchesAdmin() {
                         className="text-app-text-muted hover:text-app-accent"
                         title="Click to edit"
                       >
-                        {b.closing_time ?? '—'}
+                        {formatTime12h(b.closing_time)}
                       </button>
                     </td>
                     <td className="px-3 py-2.5">
