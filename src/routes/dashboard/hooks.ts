@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabaseClient'
+import { sortBranches } from '../../lib/queries/branches'
 import type { ProductSize } from '../../types/domain'
 
 export interface VarianceThresholdMap {
@@ -48,9 +49,9 @@ export function useCashVarianceRows(branchId: string | null, date: string) {
   return useQuery({
     queryKey: ['dashboard-cash-variance', branchId, date],
     queryFn: async (): Promise<CashVarianceRow[]> => {
-      const branchesRes = await supabase.from('branches').select('id, name').order('name')
+      const branchesRes = await supabase.from('branches').select('id, name, sort_order')
       if (branchesRes.error) throw branchesRes.error
-      const branches = (branchesRes.data ?? []).filter((b) => !branchId || b.id === branchId)
+      const branches = sortBranches(branchesRes.data ?? []).filter((b) => !branchId || b.id === branchId)
 
       let entriesQuery = supabase
         .from('daily_cash_entry')
@@ -99,9 +100,9 @@ export function useShrinkageRows(branchId: string | null, date: string) {
   return useQuery({
     queryKey: ['dashboard-shrinkage', branchId, date],
     queryFn: async (): Promise<ShrinkageRow[]> => {
-      const branchesRes = await supabase.from('branches').select('id, name').order('name')
+      const branchesRes = await supabase.from('branches').select('id, name, sort_order')
       if (branchesRes.error) throw branchesRes.error
-      const branches = (branchesRes.data ?? []).filter((b) => !branchId || b.id === branchId)
+      const branches = sortBranches(branchesRes.data ?? []).filter((b) => !branchId || b.id === branchId)
 
       const productsRes = await supabase
         .from('products')
