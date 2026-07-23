@@ -1,12 +1,31 @@
-import { useShrinkageRows, useVarianceThresholds, effectiveThreshold } from './hooks'
+import { useShrinkageData, useVarianceThresholds, effectiveThreshold, type BranchRef } from './hooks'
 
-export function ShrinkageView({ branchId, date }: { branchId: string | null; date: string }) {
-  const rows = useShrinkageRows(branchId, date)
+export function ShrinkageView({
+  branches,
+  branchId,
+  date,
+}: {
+  branches: BranchRef[]
+  branchId: string | null
+  date: string
+}) {
+  const data = useShrinkageData(branchId, date)
   const thresholds = useVarianceThresholds()
+  const visibleBranches = branches.filter((b) => !branchId || b.id === branchId)
+  const products = data.data?.products ?? []
+  const entriesByKey = data.data?.entriesByKey
 
-  const all = rows.data ?? []
-  const closed = all.filter((r) => r.closed)
-  const pendingCount = all.length - closed.length
+  const closedRows: { branch: BranchRef; product: (typeof products)[number] }[] = []
+  let pendingCount = 0
+  for (const b of visibleBranches) {
+    for (const p of products) {
+      if (entriesByKey?.has(`${b.id}:${p.id}`)) {
+        closedRows.push({ branch: b, product: p })
+      } else {
+        pendingCount++
+      }
+    }
+  }
 
   return (
     <div className="p-4">
@@ -34,28 +53,29 @@ export function ShrinkageView({ branchId, date }: { branchId: string | null; dat
             </tr>
           </thead>
           <tbody>
-            {closed.map((r) => {
-              const threshold = effectiveThreshold(thresholds.data?.shrinkage ?? new Map(), r.branchId)
-              const flagged = threshold !== null && r.variance !== null && Math.abs(r.variance) > threshold
+            {closedRows.map(({ branch: b, product: p }) => {
+              const e = entriesByKey!.get(`${b.id}:${p.id}`)!
+              const threshold = effectiveThreshold(thresholds.data?.shrinkage ?? new Map(), b.id)
+              const flagged = threshold !== null && Math.abs(e.variance) > threshold
               return (
-                <tr key={`${r.branchId}:${r.productId}`} className="border-b border-app-border last:border-b-0">
-                  <td className="px-4 py-2.5 text-app-text">{r.branchName}</td>
-                  <td className="px-3 py-2.5 text-app-text">{r.productLabel}</td>
-                  <td className="px-3 py-2.5 text-right text-app-text-muted">{r.carryoverIn}</td>
-                  <td className="px-3 py-2.5 text-right text-app-text-muted">{r.shippedIn}</td>
-                  <td className="px-3 py-2.5 text-right text-app-text-muted">{r.available}</td>
-                  <td className="px-3 py-2.5 text-right text-app-text-muted">{r.sold}</td>
-                  <td className="px-3 py-2.5 text-right text-app-text-muted">{r.wasted}</td>
-                  <td className="px-3 py-2.5 text-right text-app-text-muted">{r.carryoverOut}</td>
+                <tr key={`${b.id}:${p.id}`} className="border-b border-app-border last:border-b-0">
+                  <td className="px-4 py-2.5 text-app-text">{b.name}</td>
+                  <td className="px-3 py-2.5 text-app-text">{p.label}</td>
+                  <td className="px-3 py-2.5 text-right text-app-text-muted">{e.carryoverIn}</td>
+                  <td className="px-3 py-2.5 text-right text-app-text-muted">{e.shippedIn}</td>
+                  <td className="px-3 py-2.5 text-right text-app-text-muted">{e.available}</td>
+                  <td className="px-3 py-2.5 text-right text-app-text-muted">{e.sold}</td>
+                  <td className="px-3 py-2.5 text-right text-app-text-muted">{e.wasted}</td>
+                  <td className="px-3 py-2.5 text-right text-app-text-muted">{e.carryoverOut}</td>
                   <td className={`px-3 py-2.5 text-right font-medium ${flagged ? 'text-app-error' : 'text-app-text'}`}>
-                    {r.variance}
+                    {e.variance}
                     {flagged && <span className="ml-1">⚠</span>}
                   </td>
-                  <td className="px-4 py-2.5 text-app-text-muted">{r.explanation ?? '—'}</td>
+                  <td className="px-4 py-2.5 text-app-text-muted">{e.explanation ?? '—'}</td>
                 </tr>
               )
             })}
-            {closed.length === 0 && (
+            {closedRows.length === 0 && (
               <tr>
                 <td colSpan={10} className="px-4 py-6 text-center text-app-text-muted">
                   No closed-out products for this date yet.

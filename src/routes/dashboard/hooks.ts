@@ -1,7 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabaseClient'
-import { sortBranches } from '../../lib/queries/branches'
 import type { ProductSize } from '../../types/domain'
+
+export interface BranchRef {
+  id: string
+  name: string
+}
 
 export interface VarianceThresholdMap {
   // branch_id (or 'global') -> threshold value
@@ -33,26 +37,25 @@ export function effectiveThreshold(map: Map<string, number>, branchId: string): 
   return null
 }
 
-export interface CashVarianceRow {
-  branchId: string
-  branchName: string
-  cashCounted: number | null
-  digitalPayments: number | null
-  reportedTotal: number | null
-  computedGrossSales: number | null
-  variance: number | null
+export interface CashVarianceEntry {
+  cashCounted: number
+  digitalPayments: number
+  reportedTotal: number
+  computedGrossSales: number
+  variance: number
   explanation: string | null
-  submitted: boolean
 }
 
-export function useCashVarianceRows(branchId: string | null, date: string) {
+// Returns entries keyed by branch_id only — no branch name/order baked in. The view combines this with
+// the live branches list (from the shared useAllBranches() hook) at render time. Baking branch info into
+// this query's cached result was the actual bug: React Query caches whatever a queryFn returns, so a
+// branch rename/reorder wouldn't change already-cached rows until this exact query key was invalidated or
+// refetched — invalidating the branches list elsewhere doesn't touch a value that's frozen inside a
+// different cache entry. Keeping branch data out of here entirely means there's nothing to go stale.
+export function useCashVarianceEntries(branchId: string | null, date: string) {
   return useQuery({
     queryKey: ['dashboard-cash-variance', branchId, date],
-    queryFn: async (): Promise<CashVarianceRow[]> => {
-      const branchesRes = await supabase.from('branches').select('id, name, sort_order')
-      if (branchesRes.error) throw branchesRes.error
-      const branches = sortBranches(branchesRes.data ?? []).filter((b) => !branchId || b.id === branchId)
-
+    queryFn: async (): Promise<Map<string, CashVarianceEntry>> => {
       let entriesQuery = supabase
         .from('daily_cash_entry')
         .select('branch_id, cash_counted, digital_payments, reported_total, computed_gross_sales, variance_vs_cash, explanation')
@@ -60,50 +63,50 @@ export function useCashVarianceRows(branchId: string | null, date: string) {
       if (branchId) entriesQuery = entriesQuery.eq('branch_id', branchId)
       const entriesRes = await entriesQuery
       if (entriesRes.error) throw entriesRes.error
-      const byBranch = new Map((entriesRes.data ?? []).map((e: any) => [e.branch_id, e]))
-
-      return branches.map((b) => {
-        const e = byBranch.get(b.id)
-        return {
-          branchId: b.id,
-          branchName: b.name,
-          cashCounted: e ? Number(e.cash_counted) : null,
-          digitalPayments: e ? Number(e.digital_payments) : null,
-          reportedTotal: e ? Number(e.reported_total) : null,
-          computedGrossSales: e ? Number(e.computed_gross_sales) : null,
-          variance: e ? Number(e.variance_vs_cash) : null,
-          explanation: e?.explanation ?? null,
-          submitted: !!e,
-        }
-      })
+      const map = new Map<string, CashVarianceEntry>()
+      for (const e of entriesRes.data ?? []) {
+        map.set(e.branch_id, {
+          cashCounted: Number(e.cash_counted),
+          digitalPayments: Number(e.digital_payments),
+          reportedTotal: Number(e.reported_total),
+          computedGrossSales: Number(e.computed_gross_sales),
+          variance: Number(e.variance_vs_cash),
+          explanation: e.explanation ?? null,
+        })
+      }
+      return map
     },
   })
 }
 
-export interface ShrinkageRow {
-  branchId: string
-  branchName: string
-  productId: string
-  productLabel: string
-  carryoverIn: number | null
-  shippedIn: number | null
-  available: number | null
-  sold: number | null
-  wasted: number | null
-  carryoverOut: number | null
-  variance: number | null
-  explanation: string | null
-  closed: boolean
+export interface ShrinkageProduct {
+  id: string
+  label: string
 }
 
-export function useShrinkageRows(branchId: string | null, date: string) {
+export interface ShrinkageEntry {
+  carryoverIn: number
+  shippedIn: number
+  available: number
+  sold: number
+  wasted: number
+  carryoverOut: number
+  variance: number
+  explanation: string | null
+}
+
+export interface ShrinkageData {
+  products: ShrinkageProduct[]
+  entriesByKey: Map<string, ShrinkageEntry> // `${branchId}:${productId}`
+}
+
+// Same reasoning as useCashVarianceEntries: branches stay out of this query's cached result so the view
+// can combine it with the live branches list. Products aren't part of this fix's scope (the original
+// report was about branches), so they're still fetched fresh here each time.
+export function useShrinkageData(branchId: string | null, date: string) {
   return useQuery({
     queryKey: ['dashboard-shrinkage', branchId, date],
-    queryFn: async (): Promise<ShrinkageRow[]> => {
-      const branchesRes = await supabase.from('branches').select('id, name, sort_order')
-      if (branchesRes.error) throw branchesRes.error
-      const branches = sortBranches(branchesRes.data ?? []).filter((b) => !branchId || b.id === branchId)
-
+    queryFn: async (): Promise<ShrinkageData> => {
       const productsRes = await supabase
         .from('products')
         .select('id, flavor_name, size')
@@ -119,30 +122,25 @@ export function useShrinkageRows(branchId: string | null, date: string) {
       if (branchId) ledgerQuery = ledgerQuery.eq('branch_id', branchId)
       const ledgerRes = await ledgerQuery
       if (ledgerRes.error) throw ledgerRes.error
-      const byKey = new Map((ledgerRes.data ?? []).map((l: any) => [`${l.branch_id}:${l.product_id}`, l]))
 
-      const rows: ShrinkageRow[] = []
-      for (const b of branches) {
-        for (const p of productsRes.data ?? []) {
-          const l = byKey.get(`${b.id}:${p.id}`)
-          rows.push({
-            branchId: b.id,
-            branchName: b.name,
-            productId: p.id,
-            productLabel: `${p.flavor_name} (${p.size})`,
-            carryoverIn: l ? l.carryover_in : null,
-            shippedIn: l ? l.shipped_in : null,
-            available: l ? l.available : null,
-            sold: l ? l.sold : null,
-            wasted: l ? l.wasted : null,
-            carryoverOut: l ? l.carryover_out : null,
-            variance: l ? l.unexplained_variance : null,
-            explanation: l?.explanation ?? null,
-            closed: !!l,
-          })
-        }
+      const entriesByKey = new Map<string, ShrinkageEntry>()
+      for (const l of ledgerRes.data ?? []) {
+        entriesByKey.set(`${l.branch_id}:${l.product_id}`, {
+          carryoverIn: l.carryover_in,
+          shippedIn: l.shipped_in,
+          available: l.available,
+          sold: l.sold,
+          wasted: l.wasted,
+          carryoverOut: l.carryover_out,
+          variance: l.unexplained_variance,
+          explanation: l.explanation ?? null,
+        })
       }
-      return rows
+
+      return {
+        products: (productsRes.data ?? []).map((p) => ({ id: p.id, label: `${p.flavor_name} (${p.size})` })),
+        entriesByKey,
+      }
     },
   })
 }

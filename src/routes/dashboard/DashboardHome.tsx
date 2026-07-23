@@ -55,8 +55,8 @@ export function DashboardHome() {
         />
       )}
 
-      {section === 'cash' && <CashVarianceView branchId={branchId} date={date} />}
-      {section === 'shrinkage' && <ShrinkageView branchId={branchId} date={date} />}
+      {section === 'cash' && <CashVarianceView branches={branches.data ?? []} branchId={branchId} date={date} />}
+      {section === 'shrinkage' && <ShrinkageView branches={branches.data ?? []} branchId={branchId} date={date} />}
       {section === 'discounts' && <DiscountReviewView branchId={branchId} />}
       {section === 'spot-audit' && <SpotAuditView branchId={branchId} />}
       {section === 'flavors' && <FlavorBreakdownView branchId={branchId} />}

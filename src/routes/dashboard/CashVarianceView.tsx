@@ -1,12 +1,21 @@
-import { useCashVarianceRows, useVarianceThresholds, effectiveThreshold } from './hooks'
+import { useCashVarianceEntries, useVarianceThresholds, effectiveThreshold, type BranchRef } from './hooks'
 
-function peso(n: number | null) {
-  return n === null ? '—' : `₱${n.toFixed(2)}`
+function peso(n: number | null | undefined) {
+  return n === null || n === undefined ? '—' : `₱${n.toFixed(2)}`
 }
 
-export function CashVarianceView({ branchId, date }: { branchId: string | null; date: string }) {
-  const rows = useCashVarianceRows(branchId, date)
+export function CashVarianceView({
+  branches,
+  branchId,
+  date,
+}: {
+  branches: BranchRef[]
+  branchId: string | null
+  date: string
+}) {
+  const entries = useCashVarianceEntries(branchId, date)
   const thresholds = useVarianceThresholds()
+  const visibleBranches = branches.filter((b) => !branchId || b.id === branchId)
 
   return (
     <div className="p-4">
@@ -24,36 +33,36 @@ export function CashVarianceView({ branchId, date }: { branchId: string | null; 
             </tr>
           </thead>
           <tbody>
-            {(rows.data ?? []).map((r) => {
-              const threshold = effectiveThreshold(thresholds.data?.cashVariance ?? new Map(), r.branchId)
-              const flagged =
-                r.submitted && threshold !== null && r.variance !== null && Math.abs(r.variance) > threshold
+            {visibleBranches.map((b) => {
+              const e = entries.data?.get(b.id)
+              const threshold = effectiveThreshold(thresholds.data?.cashVariance ?? new Map(), b.id)
+              const flagged = !!e && threshold !== null && Math.abs(e.variance) > threshold
               return (
-                <tr key={r.branchId} className="border-b border-app-border last:border-b-0">
-                  <td className="px-4 py-2.5 text-app-text">{r.branchName}</td>
-                  {!r.submitted ? (
+                <tr key={b.id} className="border-b border-app-border last:border-b-0">
+                  <td className="px-4 py-2.5 text-app-text">{b.name}</td>
+                  {!e ? (
                     <td colSpan={6} className="px-3 py-2.5 text-app-text-faint">
                       Not submitted yet for this date
                     </td>
                   ) : (
                     <>
-                      <td className="px-3 py-2.5 text-right text-app-text-muted">{peso(r.cashCounted)}</td>
-                      <td className="px-3 py-2.5 text-right text-app-text-muted">{peso(r.digitalPayments)}</td>
-                      <td className="px-3 py-2.5 text-right text-app-text-muted">{peso(r.reportedTotal)}</td>
-                      <td className="px-3 py-2.5 text-right text-app-text-muted">{peso(r.computedGrossSales)}</td>
+                      <td className="px-3 py-2.5 text-right text-app-text-muted">{peso(e.cashCounted)}</td>
+                      <td className="px-3 py-2.5 text-right text-app-text-muted">{peso(e.digitalPayments)}</td>
+                      <td className="px-3 py-2.5 text-right text-app-text-muted">{peso(e.reportedTotal)}</td>
+                      <td className="px-3 py-2.5 text-right text-app-text-muted">{peso(e.computedGrossSales)}</td>
                       <td
                         className={`px-3 py-2.5 text-right font-medium ${flagged ? 'text-app-error' : 'text-app-text'}`}
                       >
-                        {peso(r.variance)}
+                        {peso(e.variance)}
                         {flagged && <span className="ml-1">⚠</span>}
                       </td>
-                      <td className="px-4 py-2.5 text-app-text-muted">{r.explanation ?? '—'}</td>
+                      <td className="px-4 py-2.5 text-app-text-muted">{e.explanation ?? '—'}</td>
                     </>
                   )}
                 </tr>
               )
             })}
-            {(rows.data ?? []).length === 0 && (
+            {visibleBranches.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-4 py-6 text-center text-app-text-muted">
                   No branches to show.
