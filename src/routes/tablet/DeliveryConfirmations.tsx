@@ -1,14 +1,23 @@
 import { useState } from 'react'
 import { formatTimestampTime } from '../../lib/formatTime'
-import { confirmDeliveryReceipt, type BranchDeliveryRow } from './hooks'
+import { confirmDeliveryReceipt, groupBranchDeliveriesByProduct, type BranchDeliveryRow } from './hooks'
 import { getErrorMessage } from '../../lib/errorMessage'
+
+function ordinal(n: number): string {
+  if (n % 10 === 1 && n % 100 !== 11) return `${n}st`
+  if (n % 10 === 2 && n % 100 !== 12) return `${n}nd`
+  if (n % 10 === 3 && n % 100 !== 13) return `${n}rd`
+  return `${n}th`
+}
 
 function DeliveryEditForm({
   delivery,
+  label,
   onConfirmed,
   onCancel,
 }: {
   delivery: BranchDeliveryRow
+  label: string
   onConfirmed: () => void
   onCancel: (() => void) | null
 }) {
@@ -45,7 +54,7 @@ function DeliveryEditForm({
   return (
     <li className="px-4 py-3">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-app-text">{delivery.productLabel}</span>
+        <span className="text-app-text-muted">{label}</span>
         <span className="text-app-text-muted">Commissary logged: {delivery.qty}</span>
       </div>
       <div className="mt-2 flex items-center gap-2">
@@ -92,18 +101,15 @@ function DeliveryEditForm({
   )
 }
 
-function DeliverySummaryRow({ delivery, onEdit }: { delivery: BranchDeliveryRow; onEdit: () => void }) {
+function DeliverySummaryRow({ delivery, label, onEdit }: { delivery: BranchDeliveryRow; label: string; onEdit: () => void }) {
   const mismatched = delivery.qtyReceived !== delivery.qty
   const diff = (delivery.qtyReceived ?? 0) - delivery.qty
   return (
     <li>
       <button type="button" onClick={onEdit} className="block w-full px-4 py-2.5 text-left text-sm hover:bg-app-bg">
         <div className="flex items-center justify-between">
-          <span className="text-app-text">{delivery.productLabel}</span>
-          <span className="text-app-text-muted">
-            Commissary logged: {delivery.qty}
-            <span className="ml-2 text-xs text-app-text-faint">{formatTimestampTime(delivery.deliveryTime)}</span>
-          </span>
+          <span className="text-app-text-muted">{label}</span>
+          <span className="text-app-text-muted">Commissary logged: {delivery.qty}</span>
         </div>
         <div className="mt-0.5 text-right">
           {mismatched ? (
@@ -134,7 +140,8 @@ export function DeliveryConfirmations({
 
   if (rows.length === 0) return null
 
-  const pending = rows.filter((r) => r.qtyReceived === null)
+  const groups = groupBranchDeliveriesByProduct(rows)
+  const totalPending = groups.reduce((sum, g) => sum + g.pendingCount, 0)
 
   function handleConfirmed() {
     setEditingId(null)
@@ -145,27 +152,42 @@ export function DeliveryConfirmations({
     <div className="mb-4 rounded-lg border border-app-border bg-app-sidebar">
       <h2 className="border-b border-app-border px-4 py-3 text-sm font-semibold text-app-text">
         Today's deliveries
-        {pending.length > 0 && (
+        {totalPending > 0 && (
           <span className="ml-2 rounded-full bg-app-error/20 px-2 py-0.5 text-xs font-medium text-app-error">
-            {pending.length} need{pending.length === 1 ? 's' : ''} confirmation
+            {totalPending} need{totalPending === 1 ? 's' : ''} confirmation
           </span>
         )}
       </h2>
 
-      <ul className="divide-y divide-app-border">
-        {rows.map((d) =>
-          d.qtyReceived === null || editingId === d.id ? (
-            <DeliveryEditForm
-              key={d.id}
-              delivery={d}
-              onConfirmed={handleConfirmed}
-              onCancel={d.qtyReceived === null ? null : () => setEditingId(null)}
-            />
-          ) : (
-            <DeliverySummaryRow key={d.id} delivery={d} onEdit={() => setEditingId(d.id)} />
-          ),
-        )}
-      </ul>
+      <div className="divide-y divide-app-border">
+        {groups.map((g) => (
+          <div key={g.productLabel}>
+            <div className="flex items-center justify-between bg-app-bg px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-app-text-muted">
+              <span>{g.productLabel}</span>
+              <span>
+                Confirmed total: {g.confirmedTotal}
+                {g.pendingCount > 0 && <span className="ml-2 text-app-error">({g.pendingCount} pending)</span>}
+              </span>
+            </div>
+            <ul className="divide-y divide-app-border">
+              {g.entries.map((d, idx) => {
+                const label = `${ordinal(idx + 1)} delivery · ${formatTimestampTime(d.deliveryTime)}`
+                return d.qtyReceived === null || editingId === d.id ? (
+                  <DeliveryEditForm
+                    key={d.id}
+                    delivery={d}
+                    label={label}
+                    onConfirmed={handleConfirmed}
+                    onCancel={d.qtyReceived === null ? null : () => setEditingId(null)}
+                  />
+                ) : (
+                  <DeliverySummaryRow key={d.id} delivery={d} label={label} onEdit={() => setEditingId(d.id)} />
+                )
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
 
       <p className="px-4 py-3 text-xs text-app-text-faint">
         "Shipped today" and "Available" on the stock table below only count deliveries you've confirmed —

@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabaseClient'
 import { getBusinessDate } from '../../lib/businessDate'
-import type { Product, Promo, Bundle, BranchTodayStockRow } from '../../types/domain'
+import type { Product, Promo, Bundle, BranchTodayStockRow, ProductSize } from '../../types/domain'
 
 export function useTodayStock(branchId: string | null) {
   const businessDate = getBusinessDate()
@@ -23,6 +23,8 @@ export function useInvalidateTodayStock() {
 
 export interface BranchDeliveryRow {
   id: string
+  flavorName: string
+  size: ProductSize
   productLabel: string
   qty: number // commissary's logged qty — never editable from the branch side
   qtyReceived: number | null // null until branch staff confirms
@@ -45,6 +47,8 @@ export function useTodayBranchDeliveries(branchId: string | null) {
       if (error) throw error
       return (data ?? []).map((r: any) => ({
         id: r.id,
+        flavorName: r.products?.flavor_name ?? 'Product',
+        size: (r.products?.size ?? 'regular') as ProductSize,
         productLabel: r.products ? `${r.products.flavor_name} (${r.products.size})` : 'Product',
         qty: r.qty,
         qtyReceived: r.qty_received,
@@ -58,6 +62,42 @@ export function useTodayBranchDeliveries(branchId: string | null) {
 export function useInvalidateTodayBranchDeliveries() {
   const qc = useQueryClient()
   return () => qc.invalidateQueries({ queryKey: ['today-branch-deliveries'] })
+}
+
+export interface BranchProductDeliveryGroup {
+  productLabel: string
+  size: ProductSize
+  entries: BranchDeliveryRow[] // oldest first, so "1st delivery"/"2nd delivery" numbering reads naturally
+  confirmedTotal: number // sum of confirmed entries only — matches what feeds Shipped today/Available
+  pendingCount: number
+}
+
+// Same stacking idea as Commissary's groupDeliveriesByBranchAndProduct, but each individual delivery here
+// keeps its own confirm/pending state (branch staff act per-delivery, not per-product) — so entries stay
+// visible and actionable rather than collapsing into a single total. Regular products first, then junior,
+// matching the Stock table below and Admin's Products screen.
+export function groupBranchDeliveriesByProduct(rows: BranchDeliveryRow[]): BranchProductDeliveryGroup[] {
+  const byProduct = new Map<string, BranchDeliveryRow[]>()
+  for (const r of rows) {
+    if (!byProduct.has(r.productLabel)) byProduct.set(r.productLabel, [])
+    byProduct.get(r.productLabel)!.push(r)
+  }
+
+  return Array.from(byProduct.entries())
+    .map(([productLabel, entries]) => {
+      const ordered = [...entries].sort((a, b) => a.deliveryTime.localeCompare(b.deliveryTime))
+      return {
+        productLabel,
+        size: ordered[0].size,
+        entries: ordered,
+        confirmedTotal: ordered.reduce((sum, e) => sum + (e.qtyReceived ?? 0), 0),
+        pendingCount: ordered.filter((e) => e.qtyReceived === null).length,
+      }
+    })
+    .sort((a, b) => {
+      if (a.size !== b.size) return a.size === 'regular' ? -1 : 1
+      return a.productLabel.localeCompare(b.productLabel)
+    })
 }
 
 export async function confirmDeliveryReceipt(id: string, qtyReceived: number, discrepancyReason?: string) {
