@@ -401,15 +401,15 @@ export function ProductsAdmin() {
         </button>
         <p className="mt-2 text-xs text-app-text-faint">
           New products need a price added before they can be sold. Click a flavor name to rename it, or
-          "change" next to its size to move it to the other group (e.g. fix an accidental Regular/Junior
+          "change" next to its size to move it to the other group (e.g. fix an accidental Standard/Junior
           mix-up) — both apply retroactively to past reports too, since they reference the same product
-          record. Use ↑/↓ to reorder within Regular or Junior — flavors can only move within their own size
+          record. Use ↑/↓ to reorder within Standard or Junior — flavors can only move within their own size
           group via the arrows, never directly into the other one.
         </p>
       </div>
 
       <div className="space-y-4">
-        {renderGroup('Regular flavors', activeRegular, true)}
+        {renderGroup('Standard flavors', activeRegular, true)}
         {renderGroup('Junior flavors', activeJunior, true)}
         {renderGroup('Discontinued', discontinued, false)}
       </div>
