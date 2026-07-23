@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { useAllBranchesAdmin, insertBranch, updateBranch, reorderBranches, useInvalidateAdmin } from './hooks'
+import { insertBranch, updateBranch, reorderBranches, useInvalidateAdmin } from './hooks'
+import { useAllBranches } from '../../../lib/queries/branches'
 import { getErrorMessage } from '../../../lib/errorMessage'
 import { formatTime12h } from '../../../lib/formatTime'
 import type { Branch } from '../../../types/domain'
 
 export function BranchesAdmin() {
-  const branches = useAllBranchesAdmin()
+  const branches = useAllBranches()
   const invalidate = useInvalidateAdmin()
 
   const [name, setName] = useState('')
@@ -29,7 +30,7 @@ export function BranchesAdmin() {
       await insertBranch({ name: name.trim(), closing_time: closingTime || null })
       setName('')
       setClosingTime('')
-      invalidate('admin-branches')
+      invalidate('branches')
     } catch (e) {
       setError(getErrorMessage(e))
     } finally {
@@ -41,7 +42,7 @@ export function BranchesAdmin() {
     setBusyId(id)
     try {
       await updateBranch(id, { is_active: !isActive })
-      invalidate('admin-branches')
+      invalidate('branches')
     } catch (e) {
       setError(getErrorMessage(e))
     } finally {
@@ -65,7 +66,7 @@ export function BranchesAdmin() {
     try {
       await updateBranch(id, { name: editName.trim(), closing_time: editClosingTime || null })
       setEditId(null)
-      invalidate('admin-branches')
+      invalidate('branches')
     } catch (e) {
       setError(getErrorMessage(e))
     } finally {
@@ -82,7 +83,7 @@ export function BranchesAdmin() {
     setError(null)
     try {
       await reorderBranches(reordered.map((b) => b.id))
-      invalidate('admin-branches')
+      invalidate('branches')
     } catch (e) {
       setError(getErrorMessage(e))
     } finally {

@@ -1,24 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../../lib/supabaseClient'
 import { getBusinessDate } from '../../../lib/businessDate'
-import type { Branch, Product, ProductSize, CatalogStatus, Promo, Bundle } from '../../../types/domain'
-
-export function useAllBranchesAdmin() {
-  return useQuery({
-    queryKey: ['admin-branches'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('branches').select('*')
-      if (error) throw error
-      const branches = data as unknown as Branch[]
-      return branches.sort((a, b) => {
-        const oa = a.sort_order ?? Number.MAX_SAFE_INTEGER
-        const ob = b.sort_order ?? Number.MAX_SAFE_INTEGER
-        if (oa !== ob) return oa - ob
-        return a.name.localeCompare(b.name)
-      })
-    },
-  })
-}
+import type { Product, ProductSize, CatalogStatus, Promo, Bundle } from '../../../types/domain'
 
 export async function insertBranch(input: { name: string; closing_time: string | null }) {
   const { error } = await supabase.from('branches').insert(input)
