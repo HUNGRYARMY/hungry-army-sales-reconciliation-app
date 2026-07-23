@@ -13,6 +13,8 @@ import {
   useInvalidateTodayActivity,
   useTodayStock,
   useInvalidateTodayStock,
+  useTodayBranchDeliveries,
+  useInvalidateTodayBranchDeliveries,
 } from './hooks'
 import { DiscountBar } from './DiscountBar'
 import { ProductGrid } from './ProductGrid'
@@ -20,6 +22,7 @@ import { BundleGrid } from './BundleGrid'
 import { OtherDiscountModal } from './OtherDiscountModal'
 import { RecentActivity } from './RecentActivity'
 import { StockTable } from './StockTable'
+import { DeliveryConfirmations } from './DeliveryConfirmations'
 import { DispositionForm } from './DispositionForm'
 import { CashEntryForm } from './CashEntryForm'
 import type { DiscountType, Product, Bundle } from '../../types/domain'
@@ -44,9 +47,16 @@ export function TabletHome() {
   const invalidateActivity = useInvalidateTodayActivity()
   const stock = useTodayStock(branchId)
   const invalidateStock = useInvalidateTodayStock()
+  const branchDeliveries = useTodayBranchDeliveries(branchId)
+  const invalidateBranchDeliveries = useInvalidateTodayBranchDeliveries()
 
   function invalidateAfterSale() {
     invalidateActivity()
+    invalidateStock()
+  }
+
+  function handleDeliveryConfirmed() {
+    invalidateBranchDeliveries()
     invalidateStock()
   }
 
@@ -195,6 +205,7 @@ export function TabletHome() {
 
       {tab === 'stock' ? (
         <div className="p-4">
+          <DeliveryConfirmations rows={branchDeliveries.data ?? []} onConfirmed={handleDeliveryConfirmed} />
           <div className="rounded-lg border border-app-border bg-app-sidebar">
             <h2 className="border-b border-app-border px-4 py-3 text-sm font-semibold text-app-text">
               Today's stock

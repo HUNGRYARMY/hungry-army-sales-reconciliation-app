@@ -21,6 +21,54 @@ export function useInvalidateTodayStock() {
   return () => qc.invalidateQueries({ queryKey: ['today-stock'] })
 }
 
+export interface BranchDeliveryRow {
+  id: string
+  productLabel: string
+  qty: number // commissary's logged qty — never editable from the branch side
+  qtyReceived: number | null // null until branch staff confirms
+  discrepancyReason: string | null
+  deliveryTime: string
+}
+
+export function useTodayBranchDeliveries(branchId: string | null) {
+  const businessDate = getBusinessDate()
+  return useQuery({
+    queryKey: ['today-branch-deliveries', branchId, businessDate],
+    enabled: !!branchId,
+    queryFn: async (): Promise<BranchDeliveryRow[]> => {
+      const { data, error } = await supabase
+        .from('deliveries')
+        .select('id, qty, qty_received, receipt_discrepancy_reason, delivery_time, products(flavor_name, size)')
+        .eq('branch_id', branchId!)
+        .eq('date', businessDate)
+        .order('delivery_time', { ascending: true })
+      if (error) throw error
+      return (data ?? []).map((r: any) => ({
+        id: r.id,
+        productLabel: r.products ? `${r.products.flavor_name} (${r.products.size})` : 'Product',
+        qty: r.qty,
+        qtyReceived: r.qty_received,
+        discrepancyReason: r.receipt_discrepancy_reason,
+        deliveryTime: r.delivery_time,
+      }))
+    },
+  })
+}
+
+export function useInvalidateTodayBranchDeliveries() {
+  const qc = useQueryClient()
+  return () => qc.invalidateQueries({ queryKey: ['today-branch-deliveries'] })
+}
+
+export async function confirmDeliveryReceipt(id: string, qtyReceived: number, discrepancyReason?: string) {
+  const { error } = await supabase.rpc('confirm_delivery_receipt', {
+    p_delivery_id: id,
+    p_qty_received: qtyReceived,
+    p_discrepancy_reason: discrepancyReason ?? null,
+  })
+  if (error) throw error
+}
+
 export function useActiveProducts() {
   return useQuery({
     queryKey: ['products', 'active'],
