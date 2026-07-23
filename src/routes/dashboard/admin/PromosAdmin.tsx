@@ -1,5 +1,12 @@
 import { useState } from 'react'
-import { useAllPromosAdmin, insertPromo, updatePromoStatus, updatePromoDetails, useInvalidateAdmin } from './hooks'
+import {
+  useAllPromosAdmin,
+  insertPromo,
+  updatePromoStatus,
+  updatePromoDetails,
+  reorderPromos,
+  useInvalidateAdmin,
+} from './hooks'
 import { getErrorMessage } from '../../../lib/errorMessage'
 import type { Promo } from '../../../types/domain'
 
@@ -74,10 +81,28 @@ export function PromosAdmin() {
     }
   }
 
-  function renderRow(p: Promo) {
+  async function handleMove(group: Promo[], index: number, direction: -1 | 1) {
+    const targetIndex = index + direction
+    if (targetIndex < 0 || targetIndex >= group.length) return
+    const reordered = [...group]
+    ;[reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]]
+    setBusyId(reordered[index].id)
+    setError(null)
+    try {
+      await reorderPromos(reordered.map((p) => p.id))
+      invalidate('admin-promos')
+    } catch (e) {
+      setError(getErrorMessage(e))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  function renderRow(p: Promo, index: number, group: Promo[], reorderable: boolean) {
     if (editId === p.id) {
       return (
         <tr key={p.id} className="border-b border-app-border last:border-b-0">
+          {reorderable && <td className="px-4 py-2.5" />}
           <td className="px-4 py-2.5">
             <input
               type="text"
@@ -126,6 +151,30 @@ export function PromosAdmin() {
     }
     return (
       <tr key={p.id} className="border-b border-app-border last:border-b-0">
+        {reorderable && (
+          <td className="px-4 py-2.5">
+            <div className="flex gap-1">
+              <button
+                type="button"
+                disabled={index === 0 || busyId === p.id}
+                onClick={() => handleMove(group, index, -1)}
+                className="rounded-md border border-app-border px-2 py-1 text-xs text-app-text-muted hover:border-app-accent hover:text-app-text disabled:opacity-30"
+                title="Move up"
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                disabled={index === group.length - 1 || busyId === p.id}
+                onClick={() => handleMove(group, index, 1)}
+                className="rounded-md border border-app-border px-2 py-1 text-xs text-app-text-muted hover:border-app-accent hover:text-app-text disabled:opacity-30"
+                title="Move down"
+              >
+                ↓
+              </button>
+            </div>
+          </td>
+        )}
         <td className="px-4 py-2.5">
           <button
             type="button"
@@ -165,7 +214,7 @@ export function PromosAdmin() {
     )
   }
 
-  function renderGroup(title: string, group: Promo[]) {
+  function renderGroup(title: string, group: Promo[], reorderable: boolean) {
     if (group.length === 0) return null
     return (
       <div className="overflow-x-auto rounded-lg border border-app-border bg-app-sidebar">
@@ -175,13 +224,14 @@ export function PromosAdmin() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-app-border text-left text-xs text-app-text-muted">
+              {reorderable && <th className="px-4 py-2 font-medium">Order</th>}
               <th className="px-4 py-2 font-medium">Name</th>
               <th className="px-3 py-2 text-right font-medium">Rate</th>
               <th className="px-3 py-2 font-medium">Status</th>
               <th className="px-4 py-2 font-medium"></th>
             </tr>
           </thead>
-          <tbody>{group.map(renderRow)}</tbody>
+          <tbody>{group.map((p, index) => renderRow(p, index, group, reorderable))}</tbody>
         </table>
       </div>
     )
@@ -225,12 +275,14 @@ export function PromosAdmin() {
         >
           {submitting ? 'Saving…' : 'Add promo'}
         </button>
-        <p className="mt-2 text-xs text-app-text-faint">Click a name or rate to edit it.</p>
+        <p className="mt-2 text-xs text-app-text-faint">
+          Click a name or rate to edit it. Use ↑/↓ to reorder active promos.
+        </p>
       </div>
 
       <div className="space-y-4">
-        {renderGroup('Active', active)}
-        {renderGroup('Discontinued', discontinued)}
+        {renderGroup('Active', active, true)}
+        {renderGroup('Discontinued', discontinued, false)}
         {all.length === 0 && (
           <div className="rounded-lg border border-app-border bg-app-sidebar px-4 py-6 text-center text-app-text-muted">
             No promos yet.

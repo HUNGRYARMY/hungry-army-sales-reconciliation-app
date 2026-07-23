@@ -125,13 +125,27 @@ export async function insertPrice(input: { product_id: string; price: number; ef
   if (error) throw error
 }
 
+// Shared by promos and bundles: active items first (ordered by manual sort_order, nulls last), then
+// discontinued (alphabetical only — no manual order UI for a retired group, matching Products/Branches).
+function sortActiveFirst<T extends { status: CatalogStatus; sort_order: number | null; name: string }>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    if (a.status !== b.status) return a.status === 'discontinued' ? 1 : -1
+    if (a.status === 'active') {
+      const oa = a.sort_order ?? Number.MAX_SAFE_INTEGER
+      const ob = b.sort_order ?? Number.MAX_SAFE_INTEGER
+      if (oa !== ob) return oa - ob
+    }
+    return a.name.localeCompare(b.name)
+  })
+}
+
 export function useAllPromosAdmin() {
   return useQuery({
     queryKey: ['admin-promos'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('promos').select('*').order('name')
+      const { data, error } = await supabase.from('promos').select('*')
       if (error) throw error
-      return data as unknown as Promo[]
+      return sortActiveFirst(data as unknown as Promo[])
     },
   })
 }
@@ -151,13 +165,21 @@ export async function updatePromoDetails(id: string, patch: { name: string; rate
   if (error) throw error
 }
 
+export async function reorderPromos(orderedIds: string[]) {
+  const results = await Promise.all(
+    orderedIds.map((id, index) => supabase.from('promos').update({ sort_order: index }).eq('id', id)),
+  )
+  const failed = results.find((r) => r.error)
+  if (failed?.error) throw failed.error
+}
+
 export function useAllBundlesAdmin() {
   return useQuery({
     queryKey: ['admin-bundles'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('bundles').select('*').order('name')
+      const { data, error } = await supabase.from('bundles').select('*')
       if (error) throw error
-      return data as unknown as Bundle[]
+      return sortActiveFirst(data as unknown as Bundle[])
     },
   })
 }
@@ -170,6 +192,14 @@ export async function insertBundle(input: { name: string; price: number }) {
 export async function updateBundleStatus(id: string, status: CatalogStatus) {
   const { error } = await supabase.from('bundles').update({ status }).eq('id', id)
   if (error) throw error
+}
+
+export async function reorderBundles(orderedIds: string[]) {
+  const results = await Promise.all(
+    orderedIds.map((id, index) => supabase.from('bundles').update({ sort_order: index }).eq('id', id)),
+  )
+  const failed = results.find((r) => r.error)
+  if (failed?.error) throw failed.error
 }
 
 export async function updateBundleDetails(id: string, patch: { name: string; price: number }) {

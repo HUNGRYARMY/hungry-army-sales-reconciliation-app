@@ -4,6 +4,7 @@ import {
   insertBundle,
   updateBundleStatus,
   updateBundleDetails,
+  reorderBundles,
   useBundleComponents,
   insertBundleComponent,
   updateBundleComponentQty,
@@ -124,12 +125,30 @@ export function BundlesAdmin() {
     }
   }
 
+  async function handleMove(group: Bundle[], index: number, direction: -1 | 1) {
+    const targetIndex = index + direction
+    if (targetIndex < 0 || targetIndex >= group.length) return
+    const reordered = [...group]
+    ;[reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]]
+    setBusyId(reordered[index].id)
+    setError(null)
+    try {
+      await reorderBundles(reordered.map((b) => b.id))
+      invalidate('admin-bundles')
+    } catch (e) {
+      setError(getErrorMessage(e))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   const activeProducts = (products.data ?? []).filter((p) => p.status === 'active')
 
-  function renderRow(b: Bundle) {
+  function renderRow(b: Bundle, index: number, group: Bundle[], reorderable: boolean) {
     if (editId === b.id) {
       return (
         <tr key={b.id} className="border-b border-app-border last:border-b-0">
+          {reorderable && <td className="px-4 py-2.5" onClick={(e) => e.stopPropagation()} />}
           <td className="px-4 py-2.5">
             <input
               type="text"
@@ -192,6 +211,36 @@ export function BundlesAdmin() {
           selectedBundleId === b.id ? 'bg-app-accent/10' : ''
         }`}
       >
+        {reorderable && (
+          <td className="px-4 py-2.5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex gap-1">
+              <button
+                type="button"
+                disabled={index === 0 || busyId === b.id}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleMove(group, index, -1)
+                }}
+                className="rounded-md border border-app-border px-2 py-1 text-xs text-app-text-muted hover:border-app-accent hover:text-app-text disabled:opacity-30"
+                title="Move up"
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                disabled={index === group.length - 1 || busyId === b.id}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleMove(group, index, 1)
+                }}
+                className="rounded-md border border-app-border px-2 py-1 text-xs text-app-text-muted hover:border-app-accent hover:text-app-text disabled:opacity-30"
+                title="Move down"
+              >
+                ↓
+              </button>
+            </div>
+          </td>
+        )}
         <td className="px-4 py-2.5">
           <button
             type="button"
@@ -240,7 +289,7 @@ export function BundlesAdmin() {
     )
   }
 
-  function renderGroup(title: string, group: Bundle[]) {
+  function renderGroup(title: string, group: Bundle[], reorderable: boolean) {
     if (group.length === 0) return null
     return (
       <div className="overflow-x-auto rounded-lg border border-app-border bg-app-sidebar">
@@ -250,13 +299,14 @@ export function BundlesAdmin() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-app-border text-left text-xs text-app-text-muted">
+              {reorderable && <th className="px-4 py-2 font-medium">Order</th>}
               <th className="px-4 py-2 font-medium">Name</th>
               <th className="px-3 py-2 text-right font-medium">Price</th>
               <th className="px-3 py-2 font-medium">Status</th>
               <th className="px-4 py-2 font-medium"></th>
             </tr>
           </thead>
-          <tbody>{group.map(renderRow)}</tbody>
+          <tbody>{group.map((b, index) => renderRow(b, index, group, reorderable))}</tbody>
         </table>
       </div>
     )
@@ -301,13 +351,13 @@ export function BundlesAdmin() {
             {submitting ? 'Saving…' : 'Add bundle'}
           </button>
           <p className="mt-2 text-xs text-app-text-faint">
-            Click a name or price to edit it. Click a row to manage its components below.
+            Click a name or price to edit it. Click a row to manage its components below. Use ↑/↓ to reorder active bundles.
           </p>
         </div>
 
         <div className="space-y-4">
-          {renderGroup('Active', active)}
-          {renderGroup('Discontinued', discontinued)}
+          {renderGroup('Active', active, true)}
+          {renderGroup('Discontinued', discontinued, false)}
           {all.length === 0 && (
             <div className="rounded-lg border border-app-border bg-app-sidebar px-4 py-6 text-center text-app-text-muted">
               No bundles yet.

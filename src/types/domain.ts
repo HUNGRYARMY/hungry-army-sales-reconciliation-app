@@ -35,6 +35,7 @@ export interface Promo {
   name: string
   rate: number
   status: CatalogStatus
+  sort_order: number | null
 }
 
 export interface Bundle {
@@ -42,6 +43,7 @@ export interface Bundle {
   name: string
   price: number
   status: CatalogStatus
+  sort_order: number | null
 }
 
 export interface BundleComponent {
