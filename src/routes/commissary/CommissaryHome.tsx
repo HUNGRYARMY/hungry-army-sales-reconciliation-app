@@ -125,14 +125,22 @@ export function CommissaryHome() {
             <p className="px-4 py-6 text-center text-sm text-app-text-muted">No deliveries logged yet today.</p>
           ) : (
             <ul className="divide-y divide-app-border">
-              {(deliveries.data ?? []).map((d) => (
-                <li key={d.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                  <span className="text-app-text">
-                    {d.branchName} — {d.productLabel}
-                  </span>
-                  <span className="text-app-text-muted">+{d.qty}</span>
-                </li>
-              ))}
+              {(deliveries.data ?? []).map((d, i, all) => {
+                const isNewBranch = i === 0 || all[i - 1].branchName !== d.branchName
+                return (
+                  <li key={d.id}>
+                    {isNewBranch && (
+                      <div className="bg-app-bg px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-app-text-muted">
+                        {d.branchName}
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between px-4 py-2.5 text-sm">
+                      <span className="text-app-text">{d.productLabel}</span>
+                      <span className="text-app-text-muted">+{d.qty}</span>
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>
