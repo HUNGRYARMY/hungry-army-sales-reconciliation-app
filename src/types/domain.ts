@@ -18,7 +18,7 @@ export interface Profile {
   id: string
   full_name: string
   role: UserRole | null
-  branch_id: string | null
+  active_branch_id: string | null // which of their assigned branches (profile_branches) they're currently working as
   is_active: boolean
 }
 

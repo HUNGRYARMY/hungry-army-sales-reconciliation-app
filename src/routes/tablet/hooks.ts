@@ -21,6 +21,36 @@ export function useInvalidateTodayStock() {
   return () => qc.invalidateQueries({ queryKey: ['today-stock'] })
 }
 
+export interface MyBranch {
+  id: string
+  name: string
+}
+
+// The set of branches the signed-in branch_staff member is allowed to work at (profile_branches) — usually
+// just one, but staff covering more than one branch get a switcher in the UI when this has >1 entry.
+export function useMyBranches(profileId: string | undefined) {
+  return useQuery({
+    queryKey: ['my-branches', profileId],
+    enabled: !!profileId,
+    queryFn: async (): Promise<MyBranch[]> => {
+      const { data, error } = await supabase
+        .from('profile_branches')
+        .select('branches(id, name)')
+        .eq('profile_id', profileId!)
+      if (error) throw error
+      return (data ?? [])
+        .map((r: any) => (r.branches ? { id: r.branches.id, name: r.branches.name } : null))
+        .filter((b): b is MyBranch => b !== null)
+        .sort((a, b) => a.name.localeCompare(b.name))
+    },
+  })
+}
+
+export async function setActiveBranch(branchId: string) {
+  const { error } = await supabase.rpc('set_active_branch', { p_branch_id: branchId })
+  if (error) throw error
+}
+
 export interface BranchDeliveryRow {
   id: string
   flavorName: string

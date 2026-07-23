@@ -15,6 +15,7 @@ import {
   useInvalidateTodayStock,
   useTodayBranchDeliveries,
   useInvalidateTodayBranchDeliveries,
+  useMyBranches,
 } from './hooks'
 import { DiscountBar } from './DiscountBar'
 import { ProductGrid } from './ProductGrid'
@@ -23,6 +24,7 @@ import { OtherDiscountModal } from './OtherDiscountModal'
 import { RecentActivity } from './RecentActivity'
 import { StockTable } from './StockTable'
 import { DeliveryConfirmations } from './DeliveryConfirmations'
+import { BranchSwitcher } from './BranchSwitcher'
 import { DispositionForm } from './DispositionForm'
 import { CashEntryForm } from './CashEntryForm'
 import type { DiscountType, Product, Bundle } from '../../types/domain'
@@ -30,8 +32,9 @@ import type { DiscountType, Product, Bundle } from '../../types/domain'
 type Tab = 'stock' | 'products' | 'bundles' | 'close-day'
 
 export function TabletHome() {
-  const { profile } = useAuth()
-  const branchId = profile?.branch_id ?? null
+  const { profile, refreshProfile } = useAuth()
+  const branchId = profile?.active_branch_id ?? null
+  const myBranches = useMyBranches(profile?.id)
 
   const [tab, setTab] = usePersistedState<Tab>('tablet-tab', 'stock')
   const [discountType, setDiscountType] = useState<DiscountType>('none')
@@ -189,6 +192,10 @@ export function TabletHome() {
           Close Day
         </button>
       </div>
+
+      {(myBranches.data?.length ?? 0) > 1 && (
+        <BranchSwitcher branches={myBranches.data!} activeBranchId={branchId} onSwitched={refreshProfile} />
+      )}
 
       {tab === 'products' && (
         <DiscountBar
