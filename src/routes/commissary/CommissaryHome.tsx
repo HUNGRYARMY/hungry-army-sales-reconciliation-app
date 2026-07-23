@@ -30,6 +30,13 @@ export function CommissaryHome() {
 
   const branchGroups = useMemo(() => groupDeliveriesByBranchAndProduct(deliveries.data ?? []), [deliveries.data])
 
+  function step(delta: number) {
+    setQty((current) => {
+      const next = (Number(current) || 0) + delta
+      return next > 0 ? String(next) : ''
+    })
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!profile || !branchId || !productId) return
@@ -60,20 +67,20 @@ export function CommissaryHome() {
 
   return (
     <AppShell>
-      <div className="grid gap-4 p-4 lg:grid-cols-[380px_1fr]">
+      <div className="grid gap-4 p-3 sm:p-4 lg:grid-cols-[380px_1fr]">
         <form
           onSubmit={handleSubmit}
           className="h-fit rounded-lg border border-app-border bg-app-sidebar p-4"
         >
-          <h2 className="mb-4 text-sm font-semibold text-app-text">Log a delivery</h2>
+          <h2 className="mb-4 text-base font-semibold text-app-text">Log a delivery</h2>
 
-          <label className="mb-3 block text-sm">
-            <span className="mb-1 block text-app-text-muted">Branch</span>
+          <label className="mb-3 block text-base">
+            <span className="mb-1.5 block text-sm text-app-text-muted">Branch</span>
             <select
               required
               value={branchId}
               onChange={(e) => setBranchId(e.target.value)}
-              className="w-full rounded-md border border-app-border bg-app-bg px-3 py-2.5 text-app-text outline-none focus:border-app-accent"
+              className="w-full rounded-md border border-app-border bg-app-bg px-3 py-3.5 text-base text-app-text outline-none focus:border-app-accent"
             >
               <option value="" disabled>
                 Select branch…
@@ -86,13 +93,13 @@ export function CommissaryHome() {
             </select>
           </label>
 
-          <label className="mb-3 block text-sm">
-            <span className="mb-1 block text-app-text-muted">Product</span>
+          <label className="mb-3 block text-base">
+            <span className="mb-1.5 block text-sm text-app-text-muted">Product</span>
             <select
               required
               value={productId}
               onChange={(e) => setProductId(e.target.value)}
-              className="w-full rounded-md border border-app-border bg-app-bg px-3 py-2.5 text-app-text outline-none focus:border-app-accent"
+              className="w-full rounded-md border border-app-border bg-app-bg px-3 py-3.5 text-base text-app-text outline-none focus:border-app-accent"
             >
               <option value="" disabled>
                 Select product…
@@ -105,23 +112,43 @@ export function CommissaryHome() {
             </select>
           </label>
 
-          <label className="mb-4 block text-sm">
-            <span className="mb-1 block text-app-text-muted">Quantity</span>
-            <input
-              type="number"
-              min={1}
-              step="1"
-              required
-              value={qty}
-              onChange={(e) => setQty(e.target.value)}
-              className="w-full rounded-md border border-app-border bg-app-bg px-3 py-2.5 text-app-text outline-none focus:border-app-accent"
-            />
+          <label className="mb-4 block text-base">
+            <span className="mb-1.5 block text-sm text-app-text-muted">Quantity</span>
+            <div className="flex items-stretch gap-2">
+              <button
+                type="button"
+                aria-label="Decrease quantity"
+                onClick={() => step(-1)}
+                className="w-14 shrink-0 rounded-md border border-app-border bg-app-bg text-2xl text-app-text-muted transition-colors hover:border-app-accent hover:text-app-text active:bg-app-border/40"
+              >
+                −
+              </button>
+              <input
+                type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                min={1}
+                step="1"
+                required
+                value={qty}
+                onChange={(e) => setQty(e.target.value)}
+                className="w-full min-w-0 rounded-md border border-app-border bg-app-bg px-3 py-3.5 text-center text-base text-app-text outline-none focus:border-app-accent"
+              />
+              <button
+                type="button"
+                aria-label="Increase quantity"
+                onClick={() => step(1)}
+                className="w-14 shrink-0 rounded-md border border-app-border bg-app-bg text-2xl text-app-text-muted transition-colors hover:border-app-accent hover:text-app-text active:bg-app-border/40"
+              >
+                +
+              </button>
+            </div>
           </label>
 
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-md bg-app-accent py-2.5 font-medium text-white transition-colors hover:bg-app-accent-hover disabled:opacity-50"
+            className="w-full rounded-md bg-app-accent py-3.5 text-base font-medium text-white transition-colors hover:bg-app-accent-hover disabled:opacity-50"
           >
             {submitting ? 'Logging…' : 'Log delivery'}
           </button>
