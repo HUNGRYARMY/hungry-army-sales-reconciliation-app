@@ -112,19 +112,24 @@ export function DeliveryConfirmations({
             const mismatched = d.qtyReceived !== d.qty
             const diff = (d.qtyReceived ?? 0) - d.qty
             return (
-              <li key={d.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                <span className="text-app-text">
-                  {d.productLabel}
-                  <span className="ml-2 text-xs text-app-text-faint">{formatTimestampTime(d.deliveryTime)}</span>
-                </span>
-                {mismatched ? (
-                  <span className="text-right text-app-error">
-                    Received {d.qtyReceived} of {d.qty} ({diff > 0 ? '+' : ''}
-                    {diff}) — {d.discrepancyReason}
+              <li key={d.id} className="px-4 py-2.5 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-app-text">{d.productLabel}</span>
+                  <span className="text-app-text-muted">
+                    Commissary logged: {d.qty}
+                    <span className="ml-2 text-xs text-app-text-faint">{formatTimestampTime(d.deliveryTime)}</span>
                   </span>
-                ) : (
-                  <span className="text-app-text-muted">Confirmed: {d.qty} ✓</span>
-                )}
+                </div>
+                <div className="mt-0.5 text-right">
+                  {mismatched ? (
+                    <span className="text-app-error">
+                      You confirmed: {d.qtyReceived} ({diff > 0 ? '+' : ''}
+                      {diff}) — {d.discrepancyReason}
+                    </span>
+                  ) : (
+                    <span className="text-app-text-muted">You confirmed: {d.qtyReceived} ✓</span>
+                  )}
+                </div>
               </li>
             )
           })}
