@@ -150,7 +150,7 @@ export function BranchesAdmin() {
                       type="button"
                       disabled={index === 0 || busyId === b.id}
                       onClick={() => handleMove(list, index, -1)}
-                      className="rounded-md border border-app-border px-2 py-1 text-xs text-app-text-muted hover:border-app-accent hover:text-app-text disabled:opacity-30"
+                      className="rounded-md border border-app-border px-3 py-2.5 text-sm text-app-text-muted hover:border-app-accent hover:text-app-text disabled:opacity-30"
                       title="Move up"
                     >
                       ↑
@@ -159,7 +159,7 @@ export function BranchesAdmin() {
                       type="button"
                       disabled={index === list.length - 1 || busyId === b.id}
                       onClick={() => handleMove(list, index, 1)}
-                      className="rounded-md border border-app-border px-2 py-1 text-xs text-app-text-muted hover:border-app-accent hover:text-app-text disabled:opacity-30"
+                      className="rounded-md border border-app-border px-3 py-2.5 text-sm text-app-text-muted hover:border-app-accent hover:text-app-text disabled:opacity-30"
                       title="Move down"
                     >
                       ↓

@@ -72,13 +72,13 @@ export function ReportsView({
 
   return (
     <div className="p-4">
-      <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-app-border bg-app-sidebar px-4 py-3 text-sm print:hidden">
+      <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-app-border bg-app-sidebar px-4 py-3 text-base print:hidden">
         <label className="flex items-center gap-2">
-          <span className="text-app-text-muted">Branch</span>
+          <span className="text-sm text-app-text-muted">Branch</span>
           <select
             value={branchId ?? 'all'}
             onChange={(e) => onBranchChange(e.target.value === 'all' ? null : e.target.value)}
-            className="rounded-md border border-app-border bg-app-bg px-2 py-1.5 text-app-text outline-none focus:border-app-accent"
+            className="rounded-md border border-app-border bg-app-bg px-3 py-2.5 text-base text-app-text outline-none focus:border-app-accent"
           >
             <option value="all">All branches</option>
             {branches.map((b) => (
@@ -93,14 +93,14 @@ export function ReportsView({
           <button
             type="button"
             onClick={() => setMode('day')}
-            className={`px-3 py-1.5 ${mode === 'day' ? 'bg-app-accent text-white' : 'text-app-text-muted hover:text-app-text'}`}
+            className={`px-4 py-2.5 text-base ${mode === 'day' ? 'bg-app-accent text-white' : 'text-app-text-muted hover:text-app-text'}`}
           >
             Day
           </button>
           <button
             type="button"
             onClick={() => setMode('month')}
-            className={`px-3 py-1.5 ${mode === 'month' ? 'bg-app-accent text-white' : 'text-app-text-muted hover:text-app-text'}`}
+            className={`px-4 py-2.5 text-base ${mode === 'month' ? 'bg-app-accent text-white' : 'text-app-text-muted hover:text-app-text'}`}
           >
             Month
           </button>
@@ -111,14 +111,14 @@ export function ReportsView({
             type="date"
             value={day}
             onChange={(e) => setDay(e.target.value)}
-            className="rounded-md border border-app-border bg-app-bg px-2 py-1.5 text-app-text outline-none focus:border-app-accent"
+            className="rounded-md border border-app-border bg-app-bg px-3 py-2.5 text-base text-app-text outline-none focus:border-app-accent"
           />
         ) : (
           <input
             type="month"
             value={month}
             onChange={(e) => setMonth(e.target.value)}
-            className="rounded-md border border-app-border bg-app-bg px-2 py-1.5 text-app-text outline-none focus:border-app-accent"
+            className="rounded-md border border-app-border bg-app-bg px-3 py-2.5 text-base text-app-text outline-none focus:border-app-accent"
           />
         )}
 
@@ -126,14 +126,14 @@ export function ReportsView({
           <button
             type="button"
             onClick={() => window.print()}
-            className="rounded-md border border-app-border px-3 py-1.5 text-app-text-muted hover:border-app-accent hover:text-app-text"
+            className="rounded-md border border-app-border px-4 py-2.5 text-base text-app-text-muted hover:border-app-accent hover:text-app-text"
           >
             Print
           </button>
           <button
             type="button"
             onClick={handleExportCsv}
-            className="rounded-md bg-app-accent px-3 py-1.5 font-medium text-white hover:bg-app-accent-hover"
+            className="rounded-md bg-app-accent px-4 py-2.5 text-base font-medium text-white hover:bg-app-accent-hover"
           >
             Export CSV
           </button>

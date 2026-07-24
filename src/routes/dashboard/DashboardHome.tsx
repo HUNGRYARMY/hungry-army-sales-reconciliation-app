@@ -34,13 +34,13 @@ export function DashboardHome() {
 
   return (
     <AppShell>
-      <div className="flex flex-wrap border-b border-app-border bg-app-sidebar px-4 print:hidden">
+      <div className="flex overflow-x-auto border-b border-app-border bg-app-sidebar px-4 print:hidden">
         {SECTIONS.map((s) => (
           <button
             key={s.id}
             type="button"
             onClick={() => setSection(s.id)}
-            className={`border-b-2 px-4 py-3 text-sm font-medium ${
+            className={`shrink-0 whitespace-nowrap border-b-2 px-4 py-3.5 text-sm font-medium ${
               section === s.id ? 'border-app-accent text-app-text' : 'border-transparent text-app-text-muted'
             }`}
           >

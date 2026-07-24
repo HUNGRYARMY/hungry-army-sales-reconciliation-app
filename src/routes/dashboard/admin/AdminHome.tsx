@@ -20,13 +20,13 @@ export function AdminHome() {
 
   return (
     <div>
-      <div className="flex flex-wrap gap-2 border-b border-app-border bg-app-sidebar px-4 py-2">
+      <div className="flex gap-2 overflow-x-auto border-b border-app-border bg-app-sidebar px-4 py-2.5">
         {SECTIONS.map((s) => (
           <button
             key={s.id}
             type="button"
             onClick={() => setSection(s.id)}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+            className={`shrink-0 whitespace-nowrap rounded-md px-4 py-3 text-sm font-medium ${
               section === s.id ? 'bg-app-accent text-white' : 'text-app-text-muted hover:text-app-text'
             }`}
           >
