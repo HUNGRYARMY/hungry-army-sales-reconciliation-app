@@ -26,7 +26,7 @@ const SECTIONS: { id: Section; label: string }[] = [
 ]
 
 export function DashboardHome() {
-  useDocumentTitle('Hungry Army S&R')
+  useDocumentTitle('Hungry Army Sales & Cash Reconciliation')
   const [section, setSection] = usePersistedState<Section>('dashboard-section', 'cash')
   const [branchId, setBranchId] = useState<string | null>(null)
   const [date, setDate] = useState(() => getBusinessDate())
