@@ -5,6 +5,7 @@ import { useAuth } from '../../lib/auth/AuthContext'
 import { supabase } from '../../lib/supabaseClient'
 import { getBusinessDate } from '../../lib/businessDate'
 import { formatTimestampTime } from '../../lib/formatTime'
+import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import { useActiveProducts } from '../tablet/hooks'
 import { useAllBranches, useTodayDeliveries, useInvalidateTodayDeliveries, groupDeliveriesByBranchAndProduct } from './hooks'
 
@@ -16,6 +17,7 @@ function ordinal(n: number): string {
 }
 
 export function CommissaryHome() {
+  useDocumentTitle('Hungry Army Commissary')
   const { profile } = useAuth()
   const branches = useAllBranches()
   const products = useActiveProducts()

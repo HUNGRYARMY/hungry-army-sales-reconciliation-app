@@ -5,6 +5,7 @@ import { useAuth } from '../../lib/auth/AuthContext'
 import { supabase } from '../../lib/supabaseClient'
 import { getBusinessDate } from '../../lib/businessDate'
 import { usePersistedState } from '../../lib/usePersistedState'
+import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import {
   useActiveProducts,
   useActivePromos,
@@ -32,6 +33,7 @@ import type { DiscountType, Product, Bundle } from '../../types/domain'
 type Tab = 'stock' | 'products' | 'bundles' | 'close-day'
 
 export function TabletHome() {
+  useDocumentTitle('Hungry Army Branch')
   const { profile, refreshProfile } = useAuth()
   const branchId = profile?.active_branch_id ?? null
   const myBranches = useMyBranches(profile?.id)

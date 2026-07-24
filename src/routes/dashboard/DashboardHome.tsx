@@ -3,6 +3,7 @@ import { AppShell } from '../../components/layout/AppShell'
 import { useAllBranches } from '../../lib/queries/branches'
 import { getBusinessDate } from '../../lib/businessDate'
 import { usePersistedState } from '../../lib/usePersistedState'
+import { useDocumentTitle } from '../../lib/useDocumentTitle'
 import { BranchDateFilter } from './BranchDateFilter'
 import { CashVarianceView } from './CashVarianceView'
 import { ShrinkageView } from './ShrinkageView'
@@ -25,6 +26,7 @@ const SECTIONS: { id: Section; label: string }[] = [
 ]
 
 export function DashboardHome() {
+  useDocumentTitle('Hungry Army S&R')
   const [section, setSection] = usePersistedState<Section>('dashboard-section', 'cash')
   const [branchId, setBranchId] = useState<string | null>(null)
   const [date, setDate] = useState(() => getBusinessDate())
