@@ -160,7 +160,7 @@ export function TabletHome() {
         <button
           type="button"
           onClick={() => setTab('stock')}
-          className={`border-b-2 px-4 py-3 text-sm font-medium ${
+          className={`border-b-2 px-5 py-3.5 text-base font-medium ${
             tab === 'stock' ? 'border-app-accent text-app-text' : 'border-transparent text-app-text-muted'
           }`}
         >
@@ -169,7 +169,7 @@ export function TabletHome() {
         <button
           type="button"
           onClick={() => setTab('products')}
-          className={`border-b-2 px-4 py-3 text-sm font-medium ${
+          className={`border-b-2 px-5 py-3.5 text-base font-medium ${
             tab === 'products' ? 'border-app-accent text-app-text' : 'border-transparent text-app-text-muted'
           }`}
         >
@@ -178,7 +178,7 @@ export function TabletHome() {
         <button
           type="button"
           onClick={() => setTab('bundles')}
-          className={`border-b-2 px-4 py-3 text-sm font-medium ${
+          className={`border-b-2 px-5 py-3.5 text-base font-medium ${
             tab === 'bundles' ? 'border-app-accent text-app-text' : 'border-transparent text-app-text-muted'
           }`}
         >
@@ -187,7 +187,7 @@ export function TabletHome() {
         <button
           type="button"
           onClick={() => setTab('close-day')}
-          className={`border-b-2 px-4 py-3 text-sm font-medium ${
+          className={`border-b-2 px-5 py-3.5 text-base font-medium ${
             tab === 'close-day' ? 'border-app-accent text-app-text' : 'border-transparent text-app-text-muted'
           }`}
         >

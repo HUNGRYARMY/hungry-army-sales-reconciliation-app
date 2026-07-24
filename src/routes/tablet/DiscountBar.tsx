@@ -25,7 +25,7 @@ export function DiscountBar({ value, onChange, promos, selectedPromoId, onSelect
             key={opt.value}
             type="button"
             onClick={() => onChange(opt.value)}
-            className={`rounded-md border px-4 py-2.5 text-sm font-medium transition-colors ${
+            className={`rounded-md border px-5 py-3.5 text-base font-medium transition-colors ${
               value === opt.value
                 ? 'border-app-accent bg-app-accent text-white'
                 : 'border-app-border bg-app-card text-app-text-muted hover:border-app-accent hover:text-app-text'
@@ -44,7 +44,7 @@ export function DiscountBar({ value, onChange, promos, selectedPromoId, onSelect
               key={p.id}
               type="button"
               onClick={() => onSelectPromo(p.id)}
-              className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`rounded-md border px-4 py-2.5 text-sm font-medium transition-colors ${
                 selectedPromoId === p.id
                   ? 'border-app-accent bg-app-accent/20 text-app-text'
                   : 'border-app-border text-app-text-muted hover:border-app-accent'

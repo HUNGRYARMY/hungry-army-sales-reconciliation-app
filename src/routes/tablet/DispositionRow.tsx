@@ -68,7 +68,7 @@ export function DispositionRow({
 
   if (done) {
     return (
-      <div className="flex items-center justify-between rounded-md border border-app-border bg-app-card px-3 py-2.5 text-sm">
+      <div className="flex items-center justify-between rounded-md border border-app-border bg-app-card px-4 py-3.5 text-base">
         <span className="text-app-text">
           {product.flavor_name} ({product.size})
         </span>
@@ -78,13 +78,13 @@ export function DispositionRow({
   }
 
   return (
-    <div className="rounded-md border border-app-border bg-app-card px-3 py-3">
-      <div className="mb-2 text-sm font-medium text-app-text">
+    <div className="rounded-md border border-app-border bg-app-card px-4 py-4">
+      <div className="mb-3 text-base font-medium text-app-text">
         {product.flavor_name} ({product.size})
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <label className="text-xs text-app-text-muted">
+      <div className="grid grid-cols-2 gap-3">
+        <label className="text-sm text-app-text-muted">
           Wasted
           <input
             type="number"
@@ -92,10 +92,10 @@ export function DispositionRow({
             step="1"
             value={wasted}
             onChange={(e) => setWasted(e.target.value)}
-            className="mt-1 w-full rounded-md border border-app-border bg-app-bg px-2 py-2 text-sm text-app-text outline-none focus:border-app-accent"
+            className="mt-1.5 w-full rounded-md border border-app-border bg-app-bg px-3 py-3 text-base text-app-text outline-none focus:border-app-accent"
           />
         </label>
-        <label className="text-xs text-app-text-muted">
+        <label className="text-sm text-app-text-muted">
           Carried forward
           <input
             type="number"
@@ -103,43 +103,43 @@ export function DispositionRow({
             step="1"
             value={carriedForward}
             onChange={(e) => setCarriedForward(e.target.value)}
-            className="mt-1 w-full rounded-md border border-app-border bg-app-bg px-2 py-2 text-sm text-app-text outline-none focus:border-app-accent"
+            className="mt-1.5 w-full rounded-md border border-app-border bg-app-bg px-3 py-3 text-base text-app-text outline-none focus:border-app-accent"
           />
         </label>
       </div>
 
       {Number(wasted) > 0 && (
-        <label className="mt-2 block text-xs text-app-text-muted">
+        <label className="mt-3 block text-sm text-app-text-muted">
           Waste reason (required)
           <input
             type="text"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            className="mt-1 w-full rounded-md border border-app-border bg-app-bg px-2 py-2 text-sm text-app-text outline-none focus:border-app-accent"
+            className="mt-1.5 w-full rounded-md border border-app-border bg-app-bg px-3 py-3 text-base text-app-text outline-none focus:border-app-accent"
           />
         </label>
       )}
 
       {needsExplanation && (
-        <label className="mt-2 block text-xs text-app-error">
+        <label className="mt-3 block text-sm text-app-error">
           Shrinkage exceeds threshold — explanation required
           <input
             type="text"
             autoFocus
             value={explanation}
             onChange={(e) => setExplanation(e.target.value)}
-            className="mt-1 w-full rounded-md border border-app-error bg-app-bg px-2 py-2 text-sm text-app-text outline-none"
+            className="mt-1.5 w-full rounded-md border border-app-error bg-app-bg px-3 py-3 text-base text-app-text outline-none"
           />
         </label>
       )}
 
-      {error && !needsExplanation && <p className="mt-2 text-xs text-app-error">{error}</p>}
+      {error && !needsExplanation && <p className="mt-2 text-sm text-app-error">{error}</p>}
 
       <button
         type="button"
         disabled={submitting || (needsExplanation && !explanation.trim())}
         onClick={() => submit(needsExplanation ? explanation.trim() : undefined)}
-        className="mt-3 w-full rounded-md bg-app-accent py-2 text-sm font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
+        className="mt-4 w-full rounded-md bg-app-accent py-3 text-base font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
       >
         {submitting ? 'Saving…' : needsExplanation ? 'Submit with explanation' : 'Log'}
       </button>

@@ -11,7 +11,7 @@ export function DispositionForm({ branchId, enteredBy }: { branchId: string; ent
       <h2 className="border-b border-app-border px-4 py-3 text-sm font-semibold text-app-text">
         End-of-day disposition (waste &amp; carry-forward)
       </h2>
-      <div className="grid gap-2 p-4 sm:grid-cols-2">
+      <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
         {(products.data ?? []).map((p) => (
           <DispositionRow
             key={p.id}

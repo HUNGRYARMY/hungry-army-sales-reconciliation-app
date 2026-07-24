@@ -97,7 +97,7 @@ export function CashEntryForm({ branchId, enteredBy }: { branchId: string; enter
           required
           value={cashCounted}
           onChange={(e) => setCashCounted(e.target.value)}
-          className="w-full rounded-md border border-app-border bg-app-bg px-3 py-2.5 text-app-text outline-none focus:border-app-accent"
+          className="w-full rounded-md border border-app-border bg-app-bg px-3 py-3 text-base text-app-text outline-none focus:border-app-accent"
         />
       </label>
 
@@ -109,7 +109,7 @@ export function CashEntryForm({ branchId, enteredBy }: { branchId: string; enter
           step="0.01"
           value={digitalPayments}
           onChange={(e) => setDigitalPayments(e.target.value)}
-          className="w-full rounded-md border border-app-border bg-app-bg px-3 py-2.5 text-app-text outline-none focus:border-app-accent"
+          className="w-full rounded-md border border-app-border bg-app-bg px-3 py-3 text-base text-app-text outline-none focus:border-app-accent"
         />
       </label>
 
@@ -132,7 +132,7 @@ export function CashEntryForm({ branchId, enteredBy }: { branchId: string; enter
           type="text"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="w-full rounded-md border border-app-border bg-app-bg px-3 py-2.5 text-app-text outline-none focus:border-app-accent"
+          className="w-full rounded-md border border-app-border bg-app-bg px-3 py-3 text-base text-app-text outline-none focus:border-app-accent"
         />
       </label>
 
@@ -144,7 +144,7 @@ export function CashEntryForm({ branchId, enteredBy }: { branchId: string; enter
             autoFocus
             value={explanation}
             onChange={(e) => setExplanation(e.target.value)}
-            className="mt-1 w-full rounded-md border border-app-error bg-app-bg px-3 py-2.5 text-app-text outline-none"
+            className="mt-1.5 w-full rounded-md border border-app-error bg-app-bg px-3 py-3 text-base text-app-text outline-none"
           />
         </label>
       )}
@@ -155,7 +155,7 @@ export function CashEntryForm({ branchId, enteredBy }: { branchId: string; enter
         type="button"
         disabled={submitting || (needsExplanation && !explanation.trim())}
         onClick={() => submit(needsExplanation ? explanation.trim() : undefined)}
-        className="w-full rounded-md bg-app-accent py-2.5 font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
+        className="w-full rounded-md bg-app-accent py-3.5 text-base font-medium text-white hover:bg-app-accent-hover disabled:opacity-50"
       >
         {submitting ? 'Saving…' : needsExplanation ? 'Submit with explanation' : 'Submit'}
       </button>

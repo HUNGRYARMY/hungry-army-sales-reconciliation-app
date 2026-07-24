@@ -31,13 +31,13 @@ export function BranchSwitcher({
   }
 
   return (
-    <div className="flex items-center gap-2 border-b border-app-border bg-app-sidebar px-4 py-2 text-sm">
+    <div className="flex items-center gap-3 border-b border-app-border bg-app-sidebar px-4 py-2.5 text-base">
       <span className="text-app-text-muted">Working at:</span>
       <select
         value={activeBranchId ?? ''}
         disabled={switching}
         onChange={(e) => handleChange(e.target.value)}
-        className="rounded-md border border-app-border bg-app-bg px-2 py-1.5 text-app-text outline-none focus:border-app-accent disabled:opacity-50"
+        className="rounded-md border border-app-border bg-app-bg px-3 py-2.5 text-base text-app-text outline-none focus:border-app-accent disabled:opacity-50"
       >
         {branches.map((b) => (
           <option key={b.id} value={b.id}>
@@ -45,8 +45,8 @@ export function BranchSwitcher({
           </option>
         ))}
       </select>
-      {switching && <span className="text-xs text-app-text-faint">Switching…</span>}
-      {error && <span className="text-xs text-app-error">{error}</span>}
+      {switching && <span className="text-sm text-app-text-faint">Switching…</span>}
+      {error && <span className="text-sm text-app-error">{error}</span>}
     </div>
   )
 }
