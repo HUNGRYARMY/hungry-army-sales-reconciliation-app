@@ -12,7 +12,7 @@ export function Header() {
   const { profile, signOut } = useAuth()
 
   return (
-    <header className="flex items-center justify-between gap-2 border-b border-app-border bg-app-sidebar px-3 py-2.5 sm:px-4 sm:py-3">
+    <header className="flex items-center justify-between gap-2 border-b border-app-border bg-app-sidebar px-3 py-2.5 print:hidden sm:px-4 sm:py-3">
       <div className="flex min-w-0 items-center gap-3">
         <img src={logo} alt="Hungry Army" className="h-8 w-auto shrink-0" />
         <div className="hidden text-xs text-app-text-muted sm:block">Sales &amp; Cash Reconciliation</div>

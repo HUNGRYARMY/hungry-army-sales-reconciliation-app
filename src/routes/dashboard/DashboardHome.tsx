@@ -9,9 +9,10 @@ import { ShrinkageView } from './ShrinkageView'
 import { DiscountReviewView } from './DiscountReviewView'
 import { SpotAuditView } from './SpotAuditView'
 import { FlavorBreakdownView } from './FlavorBreakdownView'
+import { ReportsView } from './ReportsView'
 import { AdminHome } from './admin/AdminHome'
 
-type Section = 'cash' | 'shrinkage' | 'discounts' | 'spot-audit' | 'flavors' | 'admin'
+type Section = 'cash' | 'shrinkage' | 'discounts' | 'spot-audit' | 'flavors' | 'reports' | 'admin'
 
 const SECTIONS: { id: Section; label: string }[] = [
   { id: 'cash', label: 'Cash Variance' },
@@ -19,6 +20,7 @@ const SECTIONS: { id: Section; label: string }[] = [
   { id: 'discounts', label: 'Discount Review' },
   { id: 'spot-audit', label: 'Spot Audit' },
   { id: 'flavors', label: 'Flavor Breakdown' },
+  { id: 'reports', label: 'Reports' },
   { id: 'admin', label: 'Admin' },
 ]
 
@@ -30,7 +32,7 @@ export function DashboardHome() {
 
   return (
     <AppShell>
-      <div className="flex flex-wrap border-b border-app-border bg-app-sidebar px-4">
+      <div className="flex flex-wrap border-b border-app-border bg-app-sidebar px-4 print:hidden">
         {SECTIONS.map((s) => (
           <button
             key={s.id}
@@ -45,7 +47,7 @@ export function DashboardHome() {
         ))}
       </div>
 
-      {section !== 'admin' && (
+      {section !== 'admin' && section !== 'reports' && (
         <BranchDateFilter
           branches={branches.data ?? []}
           branchId={branchId}
@@ -60,6 +62,9 @@ export function DashboardHome() {
       {section === 'discounts' && <DiscountReviewView branchId={branchId} />}
       {section === 'spot-audit' && <SpotAuditView branchId={branchId} />}
       {section === 'flavors' && <FlavorBreakdownView branchId={branchId} />}
+      {section === 'reports' && (
+        <ReportsView branches={branches.data ?? []} branchId={branchId} onBranchChange={setBranchId} />
+      )}
       {section === 'admin' && <AdminHome />}
     </AppShell>
   )

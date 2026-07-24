@@ -357,3 +357,49 @@ export function useInvalidateDashboard() {
     qc.invalidateQueries({ queryKey: ['dashboard-spot-audit'] })
   }
 }
+
+export interface PeriodSummaryRow {
+  branchId: string
+  grossSalesRevenue: number
+  cashCounted: number
+  digitalPayments: number
+  reportedTotal: number
+  computedGrossSales: number
+  cashVariance: number
+  cashDaysSubmitted: number
+  periodDays: number
+  shrinkageUnits: number
+  shrinkageFlaggedCount: number
+  shrinkageExplainedCount: number
+}
+
+// One RPC call backs both the day report (startDate === endDate) and the month report (a full calendar
+// month's range) — the on-screen table and the CSV export both read this exact same result, so they can
+// never disagree with each other.
+export function usePeriodSummary(startDate: string, endDate: string, branchId: string | null) {
+  return useQuery({
+    queryKey: ['dashboard-period-summary', startDate, endDate, branchId],
+    queryFn: async (): Promise<PeriodSummaryRow[]> => {
+      const { data, error } = await supabase.rpc('branch_period_summary', {
+        p_start: startDate,
+        p_end: endDate,
+        p_branch_id: branchId,
+      })
+      if (error) throw error
+      return (data ?? []).map((r: any) => ({
+        branchId: r.branch_id,
+        grossSalesRevenue: Number(r.gross_sales_revenue),
+        cashCounted: Number(r.cash_counted),
+        digitalPayments: Number(r.digital_payments),
+        reportedTotal: Number(r.reported_total),
+        computedGrossSales: Number(r.computed_gross_sales),
+        cashVariance: Number(r.cash_variance),
+        cashDaysSubmitted: r.cash_days_submitted,
+        periodDays: r.period_days,
+        shrinkageUnits: Number(r.shrinkage_units),
+        shrinkageFlaggedCount: r.shrinkage_flagged_count,
+        shrinkageExplainedCount: r.shrinkage_explained_count,
+      }))
+    },
+  })
+}

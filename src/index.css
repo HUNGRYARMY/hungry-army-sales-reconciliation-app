@@ -23,3 +23,18 @@ body {
   background: var(--color-app-bg);
   color: var(--color-app-text);
 }
+
+/* Printing a report (Dashboard > Reports) shouldn't waste ink on a dark background — redefining the same
+   theme variables every component already reads via its color utility classes flips the whole app to a
+   print-friendly light scheme without needing print-specific overrides scattered through every component. */
+@media print {
+  :root {
+    --color-app-bg: #ffffff;
+    --color-app-sidebar: #f5f5f5;
+    --color-app-card: #f0f0f0;
+    --color-app-text: #111111;
+    --color-app-text-muted: #444444;
+    --color-app-text-faint: #777777;
+    --color-app-border: #cccccc;
+  }
+}
