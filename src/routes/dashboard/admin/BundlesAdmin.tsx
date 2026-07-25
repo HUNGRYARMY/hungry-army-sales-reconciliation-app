@@ -375,7 +375,7 @@ export function BundlesAdmin() {
           <ul className="mb-4 space-y-1.5">
             {(components.data ?? []).map((c) => (
               <li key={c.id} className="flex items-center gap-2 text-sm">
-                <span className="flex-1 text-app-text">{c.productLabel}</span>
+                <span className="min-w-0 flex-1 truncate text-app-text">{c.productLabel}</span>
                 {editingComponentId === c.id ? (
                   <>
                     <input

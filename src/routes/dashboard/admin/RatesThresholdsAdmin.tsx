@@ -208,7 +208,7 @@ export function RatesThresholdsAdmin() {
         <ul className="mb-4 space-y-1.5">
           {overrides.map((t) => (
             <li key={t.id} className="flex items-center gap-2 text-sm">
-              <span className="flex-1 text-app-text">
+              <span className="min-w-0 flex-1 truncate text-app-text">
                 {t.branch_name} — {t.metric === 'cash_variance' ? 'Cash variance' : 'Shrinkage'}
               </span>
               <span className="text-app-text-muted">{t.threshold_value}</span>
