@@ -17,11 +17,30 @@
   color-scheme: dark;
 }
 
+/* Belt-and-suspenders against page-level horizontal scroll on mobile Safari — every data table already
+   scrolls internally via its own overflow-x-auto wrapper, so nothing here should ever need the page itself
+   to scroll sideways. iOS Safari has real quirks Chromium doesn't reproduce (e.g. a native <select> can
+   size itself to its longest <option> text rather than the selected one), so this catches whatever the
+   exact culprit is rather than chasing one specific element. */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 body {
   margin: 0;
   font-family: system-ui, "Segoe UI", Roboto, sans-serif;
   background: var(--color-app-bg);
   color: var(--color-app-text);
+}
+
+/* Mobile Safari can size a native <select> to fit its longest <option> text rather than the selected
+   one — branch-name dropdowns are the likely actual source of the reported overflow. Constraining every
+   select to its container keeps it from ever driving page width, even before the overflow-x:hidden guard
+   above would kick in. */
+select {
+  max-width: 100%;
 }
 
 /* Printing a report (Dashboard > Reports) shouldn't waste ink on a dark background — redefining the same
