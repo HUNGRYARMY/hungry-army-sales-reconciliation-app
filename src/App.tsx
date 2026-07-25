@@ -3,6 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './lib/queryClient'
 import { AuthProvider } from './lib/auth/AuthContext'
 import { UnassignedPage } from './routes/UnassignedPage'
+import { ResetPasswordPage } from './routes/auth/ResetPasswordPage'
 import { TabletHome } from './routes/tablet/TabletHome'
 import { CommissaryHome } from './routes/commissary/CommissaryHome'
 import { DashboardHome } from './routes/dashboard/DashboardHome'
@@ -16,6 +17,7 @@ function App() {
           <Routes>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<LoginRoute />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/unassigned" element={<UnassignedPage />} />
             <Route
               path="/tablet/*"
